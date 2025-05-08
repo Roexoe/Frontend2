@@ -1,33 +1,55 @@
-import React, { useState } from "react";
+"use client"
+
+import { useState } from "react"
 
 const PostSkill = () => {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
 
   const handlePost = (e) => {
-    e.preventDefault();
-    alert(`Skill Posted: ${title}`);
-  };
+    e.preventDefault()
+    alert(`Skill Posted: ${title}`)
+    // Reset form
+    setTitle("")
+    setDescription("")
+  }
 
   return (
-    <form onSubmit={handlePost} style={{ padding: "1rem", border: "1px solid #ddd", borderRadius: "8px" }}>
-      <h3>Post a New Skill</h3>
-      <input
-        type="text"
-        placeholder="Skill Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={{ display: "block", margin: "10px 0", padding: "0.5rem", width: "100%" }}
-      />
-      <textarea
-        placeholder="Skill Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        style={{ display: "block", margin: "10px 0", padding: "0.5rem", width: "100%" }}
-      />
-      <button type="submit" style={{ padding: "0.5rem 1rem" }}>Post</button>
-    </form>
-  );
-};
+    <div className="card post-skill-card">
+      <h3>Deel een nieuwe vaardigheid</h3>
+      <form onSubmit={handlePost}>
+        <div className="form-group">
+          <label htmlFor="skill-title">Titel</label>
+          <input
+            id="skill-title"
+            type="text"
+            placeholder="Wat is je vaardigheid?"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
 
-export default PostSkill;
+        <div className="form-group">
+          <label htmlFor="skill-description">Beschrijving</label>
+          <textarea
+            id="skill-description"
+            placeholder="Beschrijf je vaardigheid..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            required
+          />
+        </div>
+
+        <div className="form-actions">
+          <button type="submit" className="secondary">
+            Delen
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+export default PostSkill

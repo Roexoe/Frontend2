@@ -1,32 +1,39 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import Header from "./common/Header.jsx";
-import Footer from "./common/Footer.jsx";
-import SearchBar from "./common/SearchBar.jsx";
+import { Link } from "react-router-dom"
+import Header from "./common/Header.jsx"
+import Footer from "./common/Footer.jsx"
+import Feed from "./feed/Feed.jsx"
+import PostSkill from "./feed/PostSkill.jsx"
 
 const Home = () => {
   return (
-    <div>
+    <div className="app-container">
       <Header />
-      <main style={{ padding: "2rem", textAlign: "center" }}>
-        <h1>Welkom op Skillr!</h1>
-        <p>De plek om vaardigheden te delen en te leren van anderen.</p>
-        <SearchBar />
-        <div style={{ marginTop: "20px" }}>
-          <Link to="/login">
-            <button style={{ marginRight: "10px" }}>Inloggen</button>
-          </Link>
-          <Link to="/register">
-            <button style={{ marginRight: "10px" }}>Registreren</button>
-          </Link>
-          <Link to="/logout">
-            <button>Uitloggen</button>
-          </Link>
-        </div>
+      <main>
+        <section className="hero">
+          <h1>Welkom op Skillr!</h1>
+          <p className="lead">De plek om vaardigheden te delen en te leren van anderen.</p>
+
+          <div className="cta-container">
+            <Link to="/login">
+              <button>Inloggen</button>
+            </Link>
+            <Link to="/register">
+              <button className="secondary">Registreren</button>
+            </Link>
+          </div>
+        </section>
+
+        <section className="content">
+          <div className="feed-container">
+            <PostSkill />
+            <h2>Recent gedeelde vaardigheden</h2>
+            <Feed />
+          </div>
+        </section>
       </main>
       <Footer />
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

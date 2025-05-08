@@ -4,6 +4,8 @@ import Register from "./components/auth/Register";
 import Login from "./components/auth/Login";
 import Logout from "./components/auth/Logout";
 import Home from "./components/Home";
+import Profile from "./components/profile/Profile";
+import Notifications from "./components/common/Notifications";
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/logout" element={<Logout />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Routes>
       </div>
     </Router>
