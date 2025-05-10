@@ -1,32 +1,113 @@
+"use client"
+
+import { useState } from "react"
+import Header from "../common/Header"
+import Footer from "../common/Footer"
+import PrivacyToggle from "../common/PrivacyToggle"
+import EditProfile from "./EditProfile"
+
 const Profile = () => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [profile, setProfile] = useState({
+    name: "John Doe",
+    bio: "Passionate about sharing skills and learning from others. Frontend developer with 5 years of experience.",
+    avatar: "/src/assets/skillr-hand.png",
+    stats: {
+      skills: 42,
+      followers: 128,
+      following: 56,
+    },
+  })
+
+  const toggleEdit = () => {
+    setIsEditing(!isEditing)
+  }
+
+  const handleProfileUpdate = (updatedProfile) => {
+    setProfile({ ...profile, ...updatedProfile })
+    setIsEditing(false)
+  }
+
   return (
-    <div className="profile">
-      <img src="/src/assets/skillr-hand.png" alt="Profile Avatar" className="profile-avatar" />
+    <div className="app-container">
+      <Header />
+      <main>
+        <div className="container">
+          {isEditing ? (
+            <EditProfile profile={profile} onSave={handleProfileUpdate} onCancel={toggleEdit} />
+          ) : (
+            <div className="profile">
+              <img src={profile.avatar || "/placeholder.svg"} alt="Profile Avatar" className="profile-avatar" />
 
-      <div className="profile-info">
-        <h2>John Doe</h2>
-        <p className="profile-bio">Passionate about sharing skills and learning from others.</p>
+              <div className="profile-info">
+                <h2>{profile.name}</h2>
+                <p className="profile-bio">{profile.bio}</p>
 
-        <div className="profile-stats">
-          <div className="stat-item">
-            <span className="stat-value">42</span>
-            <span className="stat-label">Skills Shared</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">128</span>
-            <span className="stat-label">Followers</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-value">56</span>
-            <span className="stat-label">Following</span>
+                <div className="profile-stats">
+                  <div className="stat-item">
+                    <span className="stat-value">{profile.stats.skills}</span>
+                    <span className="stat-label">Vaardigheden</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">{profile.stats.followers}</span>
+                    <span className="stat-label">Volgers</span>
+                  </div>
+                  <div className="stat-item">
+                    <span className="stat-value">{profile.stats.following}</span>
+                    <span className="stat-label">Volgend</span>
+                  </div>
+                </div>
+
+                <PrivacyToggle />
+              </div>
+
+              <div className="profile-actions">
+                <button onClick={toggleEdit}>Profiel bewerken</button>
+                <button className="ghost" onClick={() => (window.location.href = "/settings")}>
+                  Instellingen
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="profile-content">
+            <h3>Mijn vaardigheden</h3>
+            <div className="feed">
+              {/* Profile skills would go here */}
+              <div className="skill-card">
+                <h3>Web Development</h3>
+                <p>HTML, CSS, JavaScript, React, and more. Building responsive and accessible websites.</p>
+                <div className="skill-card-footer">
+                  <div className="skill-user">
+                    <strong>Gedeeld door:</strong> {profile.name}
+                  </div>
+                  <div className="skill-actions">
+                    <button className="ghost">Like</button>
+                    <button className="ghost">Reactie</button>
+                    <button className="ghost">Delen</button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="skill-card">
+                <h3>UI/UX Design</h3>
+                <p>Creating user-centered designs with Figma and Adobe XD. Focus on accessibility and usability.</p>
+                <div className="skill-card-footer">
+                  <div className="skill-user">
+                    <strong>Gedeeld door:</strong> {profile.name}
+                  </div>
+                  <div className="skill-actions">
+                    <button className="ghost">Like</button>
+                    <button className="ghost">Reactie</button>
+                    <button className="ghost">Delen</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="profile-actions">
-        <button>Edit Profile</button>
-        <button className="ghost">Settings</button>
-      </div>
+      </main>
+      <Footer />
     </div>
   )
 }
