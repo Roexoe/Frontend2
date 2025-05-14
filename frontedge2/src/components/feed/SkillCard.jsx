@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 
 const SkillCard = ({ skill }) => {
   const [showComments, setShowComments] = useState(false)
@@ -21,6 +21,33 @@ const SkillCard = ({ skill }) => {
     },
   ])
   const [newComment, setNewComment] = useState("")
+  const [isHovered, setIsHovered] = useState(false)
+  const cardRef = useRef(null)
+  const [animateIn, setAnimateIn] = useState(false)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setAnimateIn(true)
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.2 },
+    )
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current)
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current)
+      }
+    }
+  }, [])
 
   const toggleComments = () => {
     setShowComments(!showComments)
@@ -60,19 +87,23 @@ const SkillCard = ({ skill }) => {
   }
 
   return (
-    <div className="skill-card">
-      <div
-        className="skill-card-header"
-        style={{ display: "flex", alignItems: "center", marginBottom: "var(--space-md)" }}
-      >
+    <div
+      className="skill-card"
+      ref={cardRef}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        opacity: animateIn ? 1 : 0,
+        transform: animateIn ? (isHovered ? "translateY(-5px)" : "translateY(0)") : "translateY(20px)",
+        transition: "opacity 0.5s ease, transform 0.5s ease",
+      }}
+    >
+      <div className="skill-card-header">
         <img
           src={skill.userAvatar || "/placeholder.svg"}
           alt={skill.user}
           style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            marginRight: "var(--space-sm)",
+            transform: isHovered ? "scale(1.1)" : "scale(1)",
           }}
         />
         <div>
@@ -85,7 +116,7 @@ const SkillCard = ({ skill }) => {
       <p>{skill.description}</p>
 
       {skill.media && (
-        <div className="skill-media">
+        <div className="skill-media" style={{ transform: isHovered ? "scale(1.02)" : "scale(1)" }}>
           {skill.mediaType === "image" ? (
             <img src={skill.media || "/placeholder.svg"} alt={skill.title} />
           ) : skill.mediaType === "video" ? (
@@ -95,7 +126,7 @@ const SkillCard = ({ skill }) => {
       )}
 
       <div className="skill-card-footer">
-        <div className="skill-stats" style={{ display: "flex", gap: "var(--space-md)" }}>
+        <div className="skill-stats">
           <span>{skill.likes} likes</span>
           <span>{skill.comments} reacties</span>
         </div>
@@ -129,8 +160,14 @@ const SkillCard = ({ skill }) => {
             </div>
           </form>
 
-          {comments.map((comment) => (
-            <div key={comment.id} className="comment">
+          {comments.map((comment, index) => (
+            <div
+              key={comment.id}
+              className="comment"
+              style={{
+                animationDelay: `${index * 100}ms`,
+              }}
+            >
               <div className="comment-header">
                 <img src={comment.avatar || "/placeholder.svg"} alt={comment.user} className="comment-avatar" />
                 <span className="comment-author">{comment.user}</span>

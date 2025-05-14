@@ -9,12 +9,12 @@ import EditProfile from "./EditProfile"
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    bio: "Passionate about sharing skills and learning from others. Frontend developer with 5 years of experience.",
+    name: "Pim Melchers",
+    bio: "Passionate about volleyball and jumping higher than the net. Always looking to improve my skills and help others do the same.",
     avatar: "/src/assets/skillr-hand.png",
     stats: {
-      skills: 42,
-      followers: 128,
+      skills: 9,
+      followers: 1280,
       following: 56,
     },
   })
@@ -56,9 +56,12 @@ const Profile = () => {
                     <span className="stat-value">{profile.stats.following}</span>
                     <span className="stat-label">Volgend</span>
                   </div>
+                  
                 </div>
-
-                <PrivacyToggle />
+                <div className="stat-item">
+                    <PrivacyToggle />
+                  </div>
+                
               </div>
 
               <div className="profile-actions">
