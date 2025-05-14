@@ -8,7 +8,7 @@ const Chat = () => {
   const [contacts, setContacts] = useState([
     {
       id: 1,
-      name: "John Doe",
+      name: "Max van Rooijen",
       avatar: "/src/assets/skillr-hand.png",
       lastMessage: "Hoi, hoe gaat het met je?",
       lastMessageTime: "10:30",
@@ -16,7 +16,7 @@ const Chat = () => {
     },
     {
       id: 2,
-      name: "Jane Smith",
+      name: "Mees",
       avatar: "/src/assets/skillr-hand.png",
       lastMessage: "Bedankt voor je hulp!",
       lastMessageTime: "Gisteren",
@@ -24,11 +24,11 @@ const Chat = () => {
     },
     {
       id: 3,
-      name: "Alex Johnson",
+      name: "Jochem Bos",
       avatar: "/src/assets/skillr-hand.png",
-      lastMessage: "Wanneer kunnen we afspreken?",
+      lastMessage: "Wanneer kan je?",
       lastMessageTime: "Maandag",
-      unread: 0,
+      unread: 1,
     },
   ])
 
