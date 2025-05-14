@@ -2,7 +2,8 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth"; // ✅ Importeer Firebase Authentication
+import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage"; // Voeg Storage import toe
 
 // Firebase configuratie
 const firebaseConfig = {
@@ -19,7 +20,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const db = getFirestore(app);
-const auth = getAuth(app); // ✅ Initialiseer Firebase Authentication
+const auth = getAuth(app);
+const storage = getStorage(app); // Initialiseer Storage
 
-// ✅ Exporteer auth zodat het gebruikt kan worden in andere bestanden
-export { db, auth, analytics };
+// Exporteer services
+export { db, auth, analytics, storage };

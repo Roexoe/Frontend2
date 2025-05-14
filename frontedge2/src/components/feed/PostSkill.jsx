@@ -1,12 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import { getAuth } from "firebase/auth"
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"
+import { db } from "../../firebase"
+import cld from "../../cloudinary" // Update deze import
 
 const PostSkill = () => {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [media, setMedia] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  const auth = getAuth()
 
   const handleMediaChange = (e) => {
     const files = Array.from(e.target.files)
@@ -26,18 +32,79 @@ const PostSkill = () => {
     setMedia(updatedMedia)
   }
 
+  // Upload naar Cloudinary in plaats van Firebase Storage
+  const uploadToCloudinary = async (file) => {
+    // Maak een nieuwe FormData object
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', 'frontedge_uploads') // Maak dit aan in je Cloudinary dashboard
+    
+    try {
+      // Upload naar Cloudinary via de upload API
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dz59lvb9i/auto/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      )
+      
+      const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error.message)
+      }
+      
+      return {
+        url: data.secure_url,
+        type: file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "other",
+        publicId: data.public_id // Cloudinary public ID voor eventuele latere bewerkingen
+      }
+    } catch (error) {
+      console.error("Error uploading to Cloudinary:", error)
+      throw error
+    }
+  }
+
   const handlePost = async (e) => {
     e.preventDefault()
     if (!title.trim()) return
+    
+    const user = auth.currentUser
+    if (!user) {
+      alert("Je moet ingelogd zijn om een vaardigheid te delen")
+      return
+    }
 
     setIsSubmitting(true)
 
     try {
-      // Here you would normally upload the media files to storage
-      // and save the post data to Firestore
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Upload media files to Cloudinary
+      const mediaUrls = []
+      
+      if (media.length > 0) {
+        for (const item of media) {
+          const mediaData = await uploadToCloudinary(item.file)
+          mediaUrls.push(mediaData)
+        }
+      }
+      
+      // Save post data to Firestore
+      const skillData = {
+        title,
+        description,
+        media: mediaUrls,
+        user: {
+          id: user.uid,
+          name: user.displayName || "Anonymous User",
+          avatar: user.photoURL || null
+        },
+        likes: [],
+        comments: 0,
+        timestamp: serverTimestamp()
+      }
+      
+      await addDoc(collection(db, "skills"), skillData)
 
       // Reset form
       setTitle("")
@@ -47,7 +114,7 @@ const PostSkill = () => {
       alert(`Vaardigheid geplaatst: ${title}`)
     } catch (error) {
       console.error("Error posting skill:", error)
-      alert("Er is een fout opgetreden bij het plaatsen van je vaardigheid.")
+      alert("Er is een fout opgetreden bij het plaatsen van je vaardigheid: " + error.message)
     } finally {
       setIsSubmitting(false)
     }

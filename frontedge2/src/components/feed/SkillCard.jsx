@@ -1,25 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import { AdvancedImage } from '@cloudinary/react'
+import { fill } from "@cloudinary/url-gen/actions/resize"
+import cld from "../../cloudinary"
 
 const SkillCard = ({ skill }) => {
   const [showComments, setShowComments] = useState(false)
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      user: "Emma Wilson",
-      avatar: "/src/assets/skillr-hand.png",
-      content: "Dit is echt nuttig! Bedankt voor het delen.",
-      timestamp: "1 uur geleden",
-    },
-    {
-      id: 2,
-      user: "David Lee",
-      avatar: "/src/assets/skillr-hand.png",
-      content: "Ik heb hier veel van geleerd. Kun je meer details delen?",
-      timestamp: "2 uur geleden",
-    },
-  ])
+  const [comments, setComments] = useState(skill.commentsList || [])
   const [newComment, setNewComment] = useState("")
   const [isHovered, setIsHovered] = useState(false)
   const cardRef = useRef(null)
@@ -35,7 +23,7 @@ const SkillCard = ({ skill }) => {
           }
         })
       },
-      { threshold: 0.2 },
+      { threshold: 0.2 }
     )
 
     if (cardRef.current) {
@@ -71,67 +59,95 @@ const SkillCard = ({ skill }) => {
 
   // Format timestamp to relative time
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60))
+    if (!timestamp) return "Onbekend"
+    
+    try {
+      // Als timestamp een Firestore timestamp is (met seconds en nanoseconds)
+      if (timestamp.seconds) {
+        const date = new Date(timestamp.seconds * 1000)
+        const now = new Date()
+        const diffInHours = Math.floor((now - date) / (1000 * 60 * 60))
 
-    if (diffInHours < 1) {
-      return "Zojuist"
-    } else if (diffInHours === 1) {
-      return "1 uur geleden"
-    } else if (diffInHours < 24) {
-      return `${diffInHours} uur geleden`
-    } else {
-      return date.toLocaleDateString()
+        if (diffInHours < 1) {
+          return "Zojuist"
+        } else if (diffInHours === 1) {
+          return "1 uur geleden"
+        } else if (diffInHours < 24) {
+          return `${diffInHours} uur geleden`
+        } else {
+          return date.toLocaleDateString()
+        }
+      } else {
+        return timestamp
+      }
+    } catch (error) {
+      console.error("Error formatting timestamp:", error)
+      return "Onbekend"
     }
+  }
+
+  // Render media items (Cloudinary or regular URLs)
+  const renderMedia = (mediaItem) => {
+    if (!mediaItem) return null
+    
+    console.log("Rendering media item:", mediaItem)  // Debug log
+
+    if (mediaItem.type === "image") {
+      // Als het een Cloudinary afbeelding is (met publicId)
+      if (mediaItem.publicId) {
+        try {
+          const image = cld.image(mediaItem.publicId)
+          image.resize(fill().width(600).height(400))
+          return <AdvancedImage cldImg={image} alt={skill.title} />
+        } catch (error) {
+          console.error("Error rendering Cloudinary image:", error)
+          // Fallback naar gewone img tag
+          return <img src={mediaItem.url} alt={skill.title} />
+        }
+      }
+      // Anders gewoon de URL gebruiken
+      return <img src={mediaItem.url} alt={skill.title} />
+    } else if (mediaItem.type === "video") {
+      return <video src={mediaItem.url} controls />
+    }
+    return null
   }
 
   return (
     <div
-      className="skill-card"
       ref={cardRef}
+      className={`skill-card ${animateIn ? "animate-in" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{
-        opacity: animateIn ? 1 : 0,
-        transform: animateIn ? (isHovered ? "translateY(-5px)" : "translateY(0)") : "translateY(20px)",
-        transition: "opacity 0.5s ease, transform 0.5s ease",
-      }}
     >
       <div className="skill-card-header">
         <img
-          src={skill.userAvatar || "/placeholder.svg"}
-          alt={skill.user}
-          style={{
-            transform: isHovered ? "scale(1.1)" : "scale(1)",
-          }}
+          src={skill.user?.avatar || "/src/assets/skillr-hand.png"}
+          alt={skill.user?.name}
+          className="user-avatar"
         />
         <div>
-          <strong>{skill.user}</strong>
-          <div style={{ fontSize: "var(--font-size-sm)", opacity: 0.7 }}>{formatTimestamp(skill.timestamp)}</div>
+          <strong>{skill.user?.name}</strong>
+          <div className="timestamp">{formatTimestamp(skill.timestamp)}</div>
         </div>
       </div>
 
       <h3>{skill.title}</h3>
       <p>{skill.description}</p>
 
-      {skill.media && (
-        <div className="skill-media" style={{ transform: isHovered ? "scale(1.02)" : "scale(1)" }}>
-          {skill.mediaType === "image" ? (
-            <img src={skill.media || "/placeholder.svg"} alt={skill.title} />
-          ) : skill.mediaType === "video" ? (
-            <video src={skill.media} controls />
-          ) : null}
+      {skill.media && skill.media.length > 0 && (
+        <div className="skill-media">
+          {renderMedia(skill.media[0])}
         </div>
       )}
 
       <div className="skill-card-footer">
         <div className="skill-stats">
-          <span>{skill.likes} likes</span>
-          <span>{skill.comments} reacties</span>
+          <span>{skill.likes?.length || 0} likes</span>
+          <span>{skill.comments || 0} reacties</span>
         </div>
         <div className="skill-actions">
-          <button className="ghost">
+          <button className={`ghost ${skill.isLiked ? "active" : ""}`}>
             <span>Like</span>
           </button>
           <button className="ghost" onClick={toggleComments}>
@@ -146,7 +162,11 @@ const SkillCard = ({ skill }) => {
       {showComments && (
         <div className="comments-section">
           <form onSubmit={handleAddComment} className="add-comment">
-            <img src="/src/assets/skillr-hand.png" alt="Current User" className="add-comment-avatar" />
+            <img 
+              src="/src/assets/skillr-hand.png" 
+              alt="Current User" 
+              className="add-comment-avatar" 
+            />
             <div className="add-comment-input">
               <input
                 type="text"
@@ -160,28 +180,26 @@ const SkillCard = ({ skill }) => {
             </div>
           </form>
 
-          {comments.map((comment, index) => (
-            <div
-              key={comment.id}
-              className="comment"
-              style={{
-                animationDelay: `${index * 100}ms`,
-              }}
-            >
-              <div className="comment-header">
-                <img src={comment.avatar || "/placeholder.svg"} alt={comment.user} className="comment-avatar" />
-                <span className="comment-author">{comment.user}</span>
-                <span className="comment-time">{comment.timestamp}</span>
+          {comments.length > 0 ? (
+            comments.map((comment) => (
+              <div key={comment.id} className="comment">
+                <div className="comment-header">
+                  <img src={comment.avatar} alt={comment.user} className="comment-avatar" />
+                  <span className="comment-author">{comment.user}</span>
+                  <span className="comment-time">{comment.timestamp}</span>
+                </div>
+                <div className="comment-content">
+                  <p>{comment.content}</p>
+                </div>
+                <div className="comment-actions">
+                  <button className="ghost">Like</button>
+                  <button className="ghost">Reageren</button>
+                </div>
               </div>
-              <div className="comment-content">
-                <p>{comment.content}</p>
-              </div>
-              <div className="comment-actions">
-                <button className="ghost">Like</button>
-                <button className="ghost">Reageren</button>
-              </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p>Nog geen reacties. Wees de eerste!</p>
+          )}
         </div>
       )}
     </div>
