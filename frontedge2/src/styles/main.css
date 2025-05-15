@@ -474,7 +474,6 @@ label {
 
 main {
   flex: 1;
-  padding: var(--space-md) 0;
   animation: fadeIn var(--transition-normal);
 }
 

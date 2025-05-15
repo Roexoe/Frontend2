@@ -66,7 +66,7 @@ const Header = () => {
             )}
 
             <button
-                className="mobile-menu-button ghost"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-md transition-all duration-300 shadow-sm hover:shadow-md"
                 onClick={toggleMobileMenu}
                 aria-label={mobileMenuOpen ? "Sluit menu" : "Open menu"}
             >
