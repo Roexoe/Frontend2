@@ -29,7 +29,7 @@ const Logo = () => {
       }}
     >
       <img
-        src="/src/assets/skillr-logo-goede.png"
+        src="/src/assets/skillrr-icon-nobg.png"
         alt="Skillr Logo"
         style={{
           height: "50px",
