@@ -3,7 +3,7 @@ const Footer = () => {
     <footer>
       <div className="container">
         <div>
-          <img src="/src/assets/skillr-logo-zonder.png" alt="Skillr Logo" className="animate-pulse" />
+          <img src="/src/assets/Skillrr-paars-nobg.png" alt="Skillr Logo" className="animate-pulse logo" />
         </div>
 
         <div>
