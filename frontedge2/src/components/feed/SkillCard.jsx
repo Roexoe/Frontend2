@@ -88,6 +88,27 @@ const SkillCard = ({ skill }) => {
     }
   }
 
+  // Voeg deze functie toe na formatTimestamp
+  const getProfileImage = (imageUrl) => {
+    if (!imageUrl) return skillrHandImg;
+    
+    // Controleer of het een cloudinary URL is
+    if (typeof imageUrl === 'string' && imageUrl.includes('cloudinary')) {
+      try {
+        // Creëer een Cloudinary image object
+        const cloudinaryImage = cld.image(imageUrl.split('/').pop());
+        cloudinaryImage.resize(fill().width(40).height(40));
+        return <AdvancedImage cldImg={cloudinaryImage} alt="Profielfoto" />;
+      } catch (error) {
+        console.error("Error loading Cloudinary image:", error);
+        return skillrHandImg;
+      }
+    }
+    
+    // Fallback naar normale img voor niet-cloudinary URLs
+    return imageUrl;
+  };
+
   // Verbeterde renderMedia functie
   const renderMedia = (mediaItem) => {
     if (!mediaItem) return null;
@@ -111,11 +132,20 @@ const SkillCard = ({ skill }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="skill-card-header">
-        <img
-          src={skill.user?.avatar || skillrHandImg}
-          alt={skill.user?.name}
-          className="user-avatar"
-        />
+        {typeof skill.user?.avatar === 'string' ? (
+          <img
+            src={skill.user?.avatar || skillrHandImg}
+            alt={skill.user?.name}
+            className="user-avatar"
+            onError={(e) => { e.target.src = skillrHandImg; }}
+          />
+        ) : (
+          <img
+            src={skillrHandImg}
+            alt={skill.user?.name}
+            className="user-avatar"
+          />
+        )}
         <div>
           <strong>{skill.user?.name}</strong>
           <div className="timestamp">{formatTimestamp(skill.timestamp)}</div>
@@ -155,7 +185,8 @@ const SkillCard = ({ skill }) => {
             <img 
               src={skillrHandImg} 
               alt="Current User" 
-              className="add-comment-avatar" 
+              className="add-comment-avatar"
+              onError={(e) => { e.target.src = skillrHandImg; }}
             />
             <div className="add-comment-input">
               <input
@@ -174,7 +205,12 @@ const SkillCard = ({ skill }) => {
             comments.map((comment) => (
               <div key={comment.id} className="comment">
                 <div className="comment-header">
-                  <img src={comment.avatar} alt={comment.user} className="comment-avatar" />
+                  <img 
+                    src={comment.avatar || skillrHandImg} 
+                    alt={comment.user} 
+                    className="comment-avatar"
+                    onError={(e) => { e.target.src = skillrHandImg; }}
+                  />
                   <span className="comment-author">{comment.user}</span>
                   <span className="comment-time">{comment.timestamp}</span>
                 </div>

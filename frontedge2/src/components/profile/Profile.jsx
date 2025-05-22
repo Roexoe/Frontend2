@@ -139,17 +139,46 @@ const Profile = () => {
 
   const handleSaveSkill = async (updatedSkill) => {
     try {
+      let mediaToSave = updatedSkill.media;
+      
+      // Controleer of er nieuwe afbeeldingen zijn (die beginnen met "blob:")
+      const hasNewMedia = updatedSkill.media && 
+        updatedSkill.media.length > 0 && 
+        (updatedSkill.media[0].url.startsWith('blob:') || !updatedSkill.media[0].publicId);
+      
+      // Als er nieuwe media is, upload deze eerst naar Cloudinary
+      if (hasNewMedia) {
+        console.log("Nieuwe media gedetecteerd, uploaden naar Cloudinary...");
+        
+        // Haal het file-object op uit je state
+        if (!media || media.length === 0) {
+          alert("Geen bestand gevonden om te uploaden.");
+          return;
+        }
+        
+        const file = media[0].file; // Neem aan dat media[0].file bestaat
+        if (!file) {
+          alert("Geen geldig bestand gevonden.");
+          return;
+        }
+        
+        // Upload naar Cloudinary
+        const uploadedMedia = await uploadToCloudinary(file);
+        mediaToSave = [uploadedMedia];
+      }
+  
+      // Update Firestore met de nieuwe media
       const skillRef = doc(db, "skills", updatedSkill.id);
       await updateDoc(skillRef, {
         title: updatedSkill.title,
         description: updatedSkill.description,
-        media: updatedSkill.media,
+        media: mediaToSave,
       });
   
       // Update de lokale staat
       setUserSkills((prevSkills) =>
         prevSkills.map((skill) =>
-          skill.id === updatedSkill.id ? updatedSkill : skill
+          skill.id === updatedSkill.id ? {...updatedSkill, media: mediaToSave} : skill
         )
       );
   
@@ -161,19 +190,31 @@ const Profile = () => {
     }
   };
 
-  const handleMediaChange = (e, skill) => {
+  const handleMediaChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
   
-    const updatedMedia = {
-      url: URL.createObjectURL(file), // Voorbeeldweergave
+    // Maak een nieuw media-item met preview en het originele file-object
+    const newMedia = [{
+      id: Date.now(),
+      preview: URL.createObjectURL(file),
       type: file.type.startsWith("image/") ? "image" : "video",
-    };
+      file: file // Bewaar het file-object voor latere upload
+    }];
   
-    setEditingSkill({
-      ...skill,
-      media: [updatedMedia], // Vervang de huidige media
-    });
+    // Update de media state
+    setMedia(newMedia);
+    
+    // Update ook editingSkill als dat bestaat
+    if (editingSkill) {
+      setEditingSkill({
+        ...editingSkill,
+        media: [{
+          url: URL.createObjectURL(file),
+          type: file.type.startsWith("image/") ? "image" : "video"
+        }]
+      });
+    }
   };
 
   const uploadToCloudinary = async (file) => {
