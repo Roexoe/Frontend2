@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { AdvancedImage } from '@cloudinary/react'
 import { fill } from "@cloudinary/url-gen/actions/resize"
 import cld from "../../cloudinary"
+// Firebase imports toevoegen
+import { doc, getDoc, getFirestore } from "firebase/firestore"
 // Importeer de afbeelding
 import skillrHandImg from "../../assets/skillr-hand.png"
 
@@ -14,6 +16,8 @@ const SkillCard = ({ skill }) => {
   const [isHovered, setIsHovered] = useState(false)
   const cardRef = useRef(null)
   const [animateIn, setAnimateIn] = useState(false)
+  // Nieuwe state voor avatar
+  const [userAvatar, setUserAvatar] = useState(skill.user?.avatar || skillrHandImg)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -38,6 +42,24 @@ const SkillCard = ({ skill }) => {
       }
     }
   }, [])
+
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      try {
+        if (skill.user?.id) {
+          const db = getFirestore()
+          const userDoc = await getDoc(doc(db, "users", skill.user.id))
+          if (userDoc.exists() && userDoc.data().photoURL) {
+            setUserAvatar(userDoc.data().photoURL)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user avatar:", error)
+      }
+    }
+    
+    fetchUserAvatar()
+  }, [skill.user?.id])
 
   const toggleComments = () => {
     setShowComments(!showComments)
@@ -132,9 +154,9 @@ const SkillCard = ({ skill }) => {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className="skill-card-header">
-        {typeof skill.user?.avatar === 'string' ? (
+        {typeof userAvatar === 'string' ? (
           <img
-            src={skill.user?.avatar || skillrHandImg}
+            src={userAvatar}
             alt={skill.user?.name}
             className="user-avatar"
             onError={(e) => { e.target.src = skillrHandImg; }}
