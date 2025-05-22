@@ -126,8 +126,7 @@ header .container {
 .search-button {
   position: absolute;
   right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 12%;
   border-radius: var(--radius-full);
   padding: 0.4em 1em;
   font-size: var(--font-size-sm);
