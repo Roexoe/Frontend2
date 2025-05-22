@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { AdvancedImage } from '@cloudinary/react'
 import { fill } from "@cloudinary/url-gen/actions/resize"
 import cld from "../../cloudinary"
+// Importeer de afbeelding
+import skillrHandImg from "../../assets/skillr-hand.png"
 
 const SkillCard = ({ skill }) => {
   const [showComments, setShowComments] = useState(false)
@@ -48,7 +50,7 @@ const SkillCard = ({ skill }) => {
     const comment = {
       id: comments.length + 1,
       user: "Current User",
-      avatar: "/src/assets/skillr-hand.png",
+      avatar: skillrHandImg,
       content: newComment,
       timestamp: "Zojuist",
     }
@@ -86,32 +88,20 @@ const SkillCard = ({ skill }) => {
     }
   }
 
-  // Render media items (Cloudinary or regular URLs)
+  // Verbeterde renderMedia functie
   const renderMedia = (mediaItem) => {
-    if (!mediaItem) return null
+    if (!mediaItem) return null;
     
-    console.log("Rendering media item:", mediaItem)  // Debug log
-
+    console.log("Rendering media item:", mediaItem); // Behoud deze log
+    
     if (mediaItem.type === "image") {
-      // Als het een Cloudinary afbeelding is (met publicId)
-      if (mediaItem.publicId) {
-        try {
-          const image = cld.image(mediaItem.publicId)
-          image.resize(fill().width(600).height(400))
-          return <AdvancedImage cldImg={image} alt={skill.title} />
-        } catch (error) {
-          console.error("Error rendering Cloudinary image:", error)
-          // Fallback naar gewone img tag
-          return <img src={mediaItem.url} alt={skill.title} />
-        }
-      }
-      // Anders gewoon de URL gebruiken
-      return <img src={mediaItem.url} alt={skill.title} />
+      // ALTIJD de URL gebruiken als fallback
+      return <img src={mediaItem.url} alt={skill.title} className="skill-image" />;
     } else if (mediaItem.type === "video") {
-      return <video src={mediaItem.url} controls />
+      return <video src={mediaItem.url} controls className="skill-video" />;
     }
-    return null
-  }
+    return null;
+  };
 
   return (
     <div
@@ -122,7 +112,7 @@ const SkillCard = ({ skill }) => {
     >
       <div className="skill-card-header">
         <img
-          src={skill.user?.avatar || "/src/assets/skillr-hand.png"}
+          src={skill.user?.avatar || skillrHandImg}
           alt={skill.user?.name}
           className="user-avatar"
         />
@@ -163,7 +153,7 @@ const SkillCard = ({ skill }) => {
         <div className="comments-section">
           <form onSubmit={handleAddComment} className="add-comment">
             <img 
-              src="/src/assets/skillr-hand.png" 
+              src={skillrHandImg} 
               alt="Current User" 
               className="add-comment-avatar" 
             />

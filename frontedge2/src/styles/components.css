@@ -903,37 +903,24 @@ footer a:after {
 }
 
 .media-upload-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  background-color: rgba(124, 58, 237, 0.05);
-  border: 2px dashed rgba(124, 58, 237, 0.3);
-  border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  display: inline-block;
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--primary-light);
+  color: white;
+  font-weight: bold;
+  border-radius: var(--radius-md);
   cursor: pointer;
+  text-align: center;
   transition: all var(--transition-normal);
 }
 
 .media-upload-button:hover {
-  background-color: rgba(124, 58, 237, 0.1);
-  border-color: var(--primary);
+  background-color: var(--primary);
   transform: translateY(-2px);
 }
 
 .media-upload-button input {
-  display: none;
-}
-
-.media-upload-button label {
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--primary);
-  transition: all var(--transition-normal);
-}
-
-.media-upload-button:hover label {
-  color: var(--primary-dark);
+  display: none; /* Verberg het input-element */
 }
 
 .media-preview {
@@ -993,7 +980,29 @@ footer a:after {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-md);
+}
+
+/* ==== Edit Skill Form ==== */
+.edit-skill-form {
   margin-top: var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background-color: var(--card-bg);
+}
+
+.edit-skill-form h3 {
+  margin-bottom: var(--space-md);
+}
+
+.edit-skill-form .form-group {
+  margin-bottom: var(--space-md);
+}
+
+.edit-skill-form .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
 }
 
 /* ==== Profile ==== */
@@ -1967,4 +1976,9 @@ input:checked + .toggle-slider:before {
 
 .trending-skill-item:hover strong {
   color: var(--primary-dark);
+}
+
+.delete-button {
+  color: var(--error);
+  font-weight: bold;
 }
