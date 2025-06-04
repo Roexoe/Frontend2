@@ -13,6 +13,7 @@ import Settings from "./components/profile/Settings"
 import Notifications from "./components/common/Notifications"
 import Chat from "./components/chat/Chat"
 import SearchResults from './components/search/SearchResultsComponent.jsx'
+import SkillDetail from "./components/skill/SkillDetail"
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/search" element={<SearchResults />} />
             <Route path="/messages" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/skill/:skillId" element={<SkillDetail />} />
           </Routes>
         </AuthProvider>
       </Router>
