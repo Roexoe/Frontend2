@@ -1981,3 +1981,64 @@ input:checked + .toggle-slider:before {
   color: var(--error);
   font-weight: bold;
 }
+
+/* Voeg deze stijlen toe aan je bestaande CSS */
+
+.back-button {
+  margin-bottom: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--primary);
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-md);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: transform var(--transition-normal);
+}
+
+.back-button:hover {
+  transform: translateX(-3px);
+}
+
+.skill-detail-card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-xl);
+  border: 1px solid var(--card-border);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.skill-detail-card h1 {
+  color: var(--primary);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-size-xl);
+}
+
+.skill-description {
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  margin-bottom: var(--space-lg);
+}
+
+.skill-detail-media {
+  margin: var(--space-lg) 0;
+  display: flex;
+  justify-content: center;
+}
+
+.skill-detail-image {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.skill-detail-video {
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}

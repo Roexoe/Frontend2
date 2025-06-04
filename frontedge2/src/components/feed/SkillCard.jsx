@@ -8,6 +8,7 @@ import cld from "../../cloudinary"
 import { doc, getDoc, getFirestore } from "firebase/firestore"
 // Importeer de afbeelding
 import skillrHandImg from "../../assets/skillr-hand.png"
+import { useNavigate } from "react-router-dom";
 
 const SkillCard = ({ skill }) => {
   const [showComments, setShowComments] = useState(false)
@@ -18,6 +19,7 @@ const SkillCard = ({ skill }) => {
   const [animateIn, setAnimateIn] = useState(false)
   // Nieuwe state voor avatar
   const [userAvatar, setUserAvatar] = useState(skill.user?.avatar || skillrHandImg)
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -146,12 +148,32 @@ const SkillCard = ({ skill }) => {
     return null;
   };
 
+  // Voeg deze functie toe voor navigatie
+  const handleCardClick = (e) => {
+    // Controleer of de klik op een knop of een link was
+    if (
+      e.target.tagName === "BUTTON" || 
+      e.target.closest("button") || 
+      e.target.tagName === "A" || 
+      e.target.closest("a") ||
+      e.target.closest(".comments-section")
+    ) {
+      // Laat de originele handler de klik afhandelen
+      return;
+    }
+    
+    // Navigeer naar de detailpagina
+    navigate(`/skill/${skill.id}`);
+  };
+
   return (
     <div
       ref={cardRef}
       className={`skill-card ${animateIn ? "animate-in" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick} // Voeg de onClick handler toe
+      style={{ cursor: 'pointer' }} // Geef de gebruiker een visuele indicatie dat het klikbaar is
     >
       <div className="skill-card-header">
         {typeof userAvatar === 'string' ? (
@@ -188,17 +210,7 @@ const SkillCard = ({ skill }) => {
           <span>{skill.likes?.length || 0} likes</span>
           <span>{skill.comments || 0} reacties</span>
         </div>
-        <div className="skill-actions">
-          <button className={`ghost ${skill.isLiked ? "active" : ""}`}>
-            <span>Like</span>
-          </button>
-          <button className="ghost" onClick={toggleComments}>
-            <span>Reacties</span>
-          </button>
-          <button className="ghost">
-            <span>Delen</span>
-          </button>
-        </div>
+        {/* Actieknoppen verwijderd - deze functionaliteit is nu alleen beschikbaar in de detailweergave */}
       </div>
 
       {showComments && (
