@@ -12,6 +12,7 @@ import Profile from "./components/profile/Profile"
 import Settings from "./components/profile/Settings"
 import Notifications from "./components/common/Notifications"
 import Chat from "./components/chat/Chat"
+import SearchResults from './components/search/SearchResultsComponent.jsx'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/search" element={<SearchResults />} />
             <Route path="/messages" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           </Routes>
         </AuthProvider>
