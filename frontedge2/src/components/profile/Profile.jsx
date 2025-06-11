@@ -9,6 +9,8 @@ import EditProfile from "./EditProfile"
 import { useAuth } from "../auth/AuthContextProvider"
 import { doc, getDoc, getFirestore, deleteDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
 import { collection, query, where, getDocs } from "firebase/firestore"
+import SkillCard from "../feed/SkillCard"; // Voeg deze import toe
+import EditSkill from "./EditSkill"; // Zorg ervoor dat je het juiste pad naar EditSkill opgeeft
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
@@ -135,6 +137,7 @@ const Profile = () => {
 
   const handleEditSkill = (skill) => {
     setEditingSkill(skill);
+    setMedia(skill.media || []);
   };
 
   const handleSaveSkill = async (updatedSkill) => {
@@ -369,138 +372,43 @@ const Profile = () => {
                 </div>
             )}
 
-            <div className="profile-content">
-              <h3>Vaardigheden</h3>
-              <div className="feed">
-                {userSkills && userSkills.length > 0 ? (
-                  userSkills.map((skill) => (
-                    <div className="skill-card" key={skill.id}>
-                      <h3>{skill.title}</h3>
-                      <p>{skill.description}</p>
-                      {skill.media && skill.media.length > 0 && (
-                        <div className="skill-media">
-                          {skill.media[0].type === "image" ? (
-                            <img src={skill.media[0].url} alt={skill.title} className="skill-image" />
-                          ) : skill.media[0].type === "video" ? (
-                            <video src={skill.media[0].url} controls className="skill-video" />
-                          ) : null}
-                        </div>
-                      )}
-                      <div className="skill-card-footer">
-                        <div className="skill-user">
-                          <strong>Gedeeld door:</strong> {profile.name}
-                        </div>
-                        <div className="skill-actions">
-                          <button className="ghost">Like</button>
-                          <button className="ghost">Reactie</button>
-                          <button className="ghost">Delen</button>
-                          {isOwnProfile && (
-                            <>
-                              <button
-                                className="ghost edit-button"
-                                onClick={() => handleEditSkill(skill)}
-                              >
-                                Bewerken
-                              </button>
-                              <button
-                                className="ghost delete-button"
-                                onClick={() => handleDeleteSkill(skill.id)}
-                              >
-                                Verwijderen
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="empty-state">
-                    <p>Geen vaardigheden gedeeld</p>
-                    {isOwnProfile && (
-                      <button onClick={() => (window.location.href = "/")}>
-                        Deel je eerste vaardigheid
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            {editingSkill && (
-              <div className="edit-skill-form">
-                <h3>Vaardigheid bewerken</h3>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSaveSkill(editingSkill);
-                  }}
-                >
-                  <div className="form-group">
-                    <label htmlFor="edit-title">Titel</label>
-                    <input
-                      id="edit-title"
-                      type="text"
-                      value={editingSkill.title}
-                      onChange={(e) =>
-                        setEditingSkill({ ...editingSkill, title: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="edit-description">Beschrijving</label>
-                    <input
-                      id="edit-description"
-                      value={editingSkill.description}
-                      onChange={(e) =>
-                        setEditingSkill({ ...editingSkill, description: e.target.value })
-                      }
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="media-upload" className="media-upload-button">
-                      Kies een bestand
-                      <input
-                        type="file"
-                        id="media-upload"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleMediaChange}
-                      />
-                    </label>
-                    {media.length > 0 && (
-                      <div className="media-preview">
-                        {media.map((item) => (
-                          <div key={item.id} className="media-preview-item">
-                            {item.type === "image" ? (
-                              <img src={item.preview || "/placeholder.svg"} alt="Preview" />
-                            ) : item.type === "video" ? (
-                              <video src={item.preview} controls />
-                            ) : null}
-                            <button
-                              type="button"
-                              className="remove-media"
-                              onClick={() => removeMedia(item.id)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+            {editingSkill ? (
+              <EditSkill
+                skill={editingSkill}
+                onSave={handleSaveSkill}
+                onCancel={() => setEditingSkill(null)}
+                onMediaChange={handleMediaChange}
+                media={media}
+                setMedia={setMedia}
+              />
+            ) : (
+              <>
+                <div className="profile-content">
+                  <h3>Vaardigheden</h3>
+                  <div className="feed">
+                    {userSkills && userSkills.length > 0 ? (
+                      userSkills.map((skill) => (
+                        <SkillCard
+                          key={skill.id}
+                          skill={skill}
+                          isOwnProfile={isOwnProfile}
+                          onEdit={() => handleEditSkill(skill)}
+                          onDelete={() => handleDeleteSkill(skill.id)}
+                        />
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        <p>Geen vaardigheden gedeeld</p>
+                        {isOwnProfile && (
+                          <button onClick={() => (window.location.href = "/")}>
+                            Deel je eerste vaardigheid
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  <div className="form-actions">
-                    <button type="button" className="ghost" onClick={() => setEditingSkill(null)}>
-                      Annuleren
-                    </button>
-                    <button type="submit">Opslaan</button>
-                  </div>
-                </form>
-              </div>
+                </div>
+              </>
             )}
           </div>
         </main>
