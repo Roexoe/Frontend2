@@ -80,6 +80,11 @@ const SearchResults = () => {
                 ...doc.data(),
             }))
 
+            // For each found user, also search for their posts
+            if (isInitialSearch && newUsers.length > 0) {
+                await searchPostsByUsers(newUsers)
+            }
+
             if (isInitialSearch) {
                 setUsers(newUsers)
             } else {
@@ -93,6 +98,140 @@ const SearchResults = () => {
             console.error("Error searching users:", error)
         } finally {
             setUsersLoading(false)
+        }
+    }
+
+    const searchPostsByUsers = async (foundUsers) => {
+        try {
+            const userIds = foundUsers.map(user => user.id)
+
+            if (userIds.length === 0) return
+
+            // Search for posts by these users - try multiple approaches for better results
+            let allRelatedPosts = []
+
+            // Method 1: Use userId field if it exists
+            try {
+                const postsQuery = query(
+                    collection(db, "skills"),
+                    where("userId", "in", userIds.slice(0, 10)),
+                    limit(ITEMS_PER_PAGE)
+                )
+                const postsSnapshot = await getDocs(postsQuery)
+                const relatedPosts = postsSnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    isRelated: true
+                }))
+                allRelatedPosts = [...allRelatedPosts, ...relatedPosts]
+            } catch (error) {
+                console.log("Method 1 failed, trying alternative approach:", error)
+            }
+
+            // Method 2: If userId doesn't work, try user.id path
+            if (allRelatedPosts.length === 0) {
+                try {
+                    const postsQuery = query(
+                        collection(db, "skills"),
+                        where("user.id", "in", userIds.slice(0, 10)),
+                        limit(ITEMS_PER_PAGE)
+                    )
+                    const postsSnapshot = await getDocs(postsQuery)
+                    const relatedPosts = postsSnapshot.docs.map((doc) => ({
+                        id: doc.id,
+                        ...doc.data(),
+                        isRelated: true
+                    }))
+                    allRelatedPosts = [...allRelatedPosts, ...relatedPosts]
+                } catch (error) {
+                    console.log("Method 2 failed:", error)
+                }
+            }
+
+            // Method 3: Fallback - get all posts and filter in memory (less efficient but more reliable)
+            if (allRelatedPosts.length === 0) {
+                try {
+                    const allPostsQuery = query(
+                        collection(db, "skills"),
+                        limit(50) // Limit to prevent too much data
+                    )
+                    const allPostsSnapshot = await getDocs(allPostsQuery)
+                    const filteredPosts = allPostsSnapshot.docs
+                        .map((doc) => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }))
+                        .filter(post => {
+                            const postUserId = post.userId || post.user?.id || post.authorId
+                            return userIds.includes(postUserId)
+                        })
+                        .map(post => ({
+                            ...post,
+                            isRelated: true
+                        }))
+
+                    allRelatedPosts = [...allRelatedPosts, ...filteredPosts]
+                } catch (error) {
+                    console.log("Method 3 failed:", error)
+                }
+            }
+
+            console.log(`Found ${allRelatedPosts.length} related posts for users:`, userIds)
+
+            // Add these posts to the existing posts (avoid duplicates)
+            if (allRelatedPosts.length > 0) {
+                setPosts(prevPosts => {
+                    const existingPostIds = new Set(prevPosts.map(post => post.id))
+                    const newRelatedPosts = allRelatedPosts.filter(post => !existingPostIds.has(post.id))
+                    console.log(`Adding ${newRelatedPosts.length} new related posts`)
+                    return [...prevPosts, ...newRelatedPosts]
+                })
+            }
+
+        } catch (error) {
+            console.error("Error searching posts by users:", error)
+        }
+    }
+
+    const searchUsersByPosts = async (foundPosts) => {
+        try {
+            // Get unique user IDs from found posts - try multiple field possibilities
+            const userIds = [...new Set(foundPosts
+                .map(post => post.userId || post.user?.id || post.authorId)
+                .filter(Boolean)
+            )]
+
+            console.log(`Looking for users with IDs:`, userIds)
+
+            if (userIds.length === 0) return
+
+            // Search for these users
+            const usersQuery = query(
+                collection(db, "users"),
+                where("__name__", "in", userIds.slice(0, 10)) // Firestore 'in' query limited to 10 items
+            )
+
+            const usersSnapshot = await getDocs(usersQuery)
+            const relatedUsers = usersSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+                isRelated: true // Mark as related result
+            }))
+
+            console.log(`Found ${relatedUsers.length} related users`)
+
+            // Add these users to the existing users (avoid duplicates)
+            if (relatedUsers.length > 0) {
+                setUsers(prevUsers => {
+                    const existingUserIds = new Set(prevUsers.map(user => user.id))
+                    const newRelatedUsers = relatedUsers.filter(user => !existingUserIds.has(user.id))
+                    console.log(`Adding ${newRelatedUsers.length} new related users`)
+                    return [...prevUsers, ...newRelatedUsers]
+                })
+            }
+
+        } catch (error) {
+            console.error("Error searching users by posts:", error)
         }
     }
 
@@ -126,6 +265,11 @@ const SearchResults = () => {
                 id: doc.id,
                 ...doc.data(),
             }))
+
+            // For each found post, also search for related users
+            if (isInitialSearch && newPosts.length > 0) {
+                await searchUsersByPosts(newPosts)
+            }
 
             if (isInitialSearch) {
                 setPosts(newPosts)
@@ -196,7 +340,7 @@ const SearchResults = () => {
                                         </thead>
                                         <tbody>
                                         {users.map((user) => (
-                                            <tr key={user.id}>
+                                            <tr key={user.id} className={user.isRelated ? 'related-result' : ''}>
                                                 <td>
                                                     <div className="user-info">
                                                         <img
@@ -258,7 +402,7 @@ const SearchResults = () => {
                                         </thead>
                                         <tbody>
                                         {posts.map((post) => (
-                                            <tr key={post.id}>
+                                            <tr key={post.id} className={post.isRelated ? 'related-result' : ''}>
                                                 <td className="post-title">{post.title}</td>
                                                 <td className="post-description">
                                                     {post.description ?
