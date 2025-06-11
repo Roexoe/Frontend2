@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
 import PrivacyToggle from "../common/PrivacyToggle"
@@ -31,15 +31,20 @@ const Profile = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { currentUser } = useAuth()
-  const { userId } = useParams()
+  const navigate = useNavigate()
   const db = getFirestore()
 
-  const profileId = userId || (currentUser ? currentUser.uid : null)
-  const isOwnProfile = currentUser && (!userId || userId === currentUser.uid)
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/login')
+      return
+    }
+  }, [currentUser, navigate])
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!profileId) {
+      if (!currentUser) {
         setLoading(false)
         return
       }
@@ -47,7 +52,7 @@ const Profile = () => {
       try {
         setLoading(true)
         // Haal gebruikersgegevens op uit Firestore
-        const userRef = doc(db, "users", profileId)
+        const userRef = doc(db, "users", currentUser.uid)
         const userDoc = await getDoc(userRef)
 
         if (userDoc.exists()) {
@@ -55,8 +60,8 @@ const Profile = () => {
 
           // Haal gebruikersvaardigheden op
           const skillsQuery = query(
-            collection(db, "skills"),
-            where("user.id", "==", profileId) // Zorg ervoor dat dit overeenkomt met hoe je de gebruiker opslaat in Firestore
+              collection(db, "skills"),
+              where("user.id", "==", currentUser.uid)
           )
           const skillsSnapshot = await getDocs(skillsQuery)
           const skills = []
@@ -65,29 +70,35 @@ const Profile = () => {
           })
           setUserSkills(skills)
 
-          // Haal followers en following aantallen op (dit is een voorbeeld)
-          // In een echte app zou je hiervoor aparte collecties gebruiken
-
           setProfile({
-            name: userData.displayName || currentUser?.displayName || currentUser?.email?.split('@')[0] || "Gebruiker",
+            name: userData.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Gebruiker",
             bio: userData.bio || "Geen biografie beschikbaar",
-            avatar: userData.photoURL || currentUser?.photoURL || "/src/assets/skillr-hand.png",
+            avatar: userData.photoURL || currentUser.photoURL || "/src/assets/skillr-hand.png",
             stats: {
               skills: skills.length,
               followers: userData.followersCount || 0,
               following: userData.followingCount || 0,
             }
           })
-
+        } else {
+          // Als er geen gebruikersdocument is, gebruik Auth-info
+          const skillsQuery = query(
+              collection(db, "skills"),
+              where("user.id", "==", currentUser.uid)
+          )
+          const skillsSnapshot = await getDocs(skillsQuery)
+          const skills = []
+          skillsSnapshot.forEach(doc => {
+            skills.push({ id: doc.id, ...doc.data() })
+          })
           setUserSkills(skills)
-        } else if (currentUser) {
-          // Als er geen gebruikersdocument is, maar wel een ingelogde gebruiker, gebruik Auth-info
+
           setProfile({
             name: currentUser.displayName || currentUser.email.split('@')[0],
             bio: "Geen biografie beschikbaar",
             avatar: currentUser.photoURL || "/src/assets/skillr-hand.png",
             stats: {
-              skills: 0,
+              skills: skills.length,
               followers: 0,
               following: 0,
             }
@@ -101,7 +112,7 @@ const Profile = () => {
     }
 
     fetchUserData()
-  }, [profileId, currentUser, db])
+  }, [currentUser, db])
 
   const toggleEdit = () => {
     setIsEditing(!isEditing)
@@ -110,22 +121,16 @@ const Profile = () => {
   const handleProfileUpdate = async (updatedProfile) => {
     setProfile({ ...profile, ...updatedProfile })
     setIsEditing(false)
-
-    // De EditProfile component zal de Firebase updates afhandelen
   }
 
   const handleDeleteSkill = async (skillId) => {
     if (!window.confirm("Weet je zeker dat je deze vaardigheid wilt verwijderen?")) {
       return;
     }
-  
+
     try {
-      // Verwijder de vaardigheid uit Firestore
       await deleteDoc(doc(db, "skills", skillId));
-  
-      // Verwijder de vaardigheid uit de lokale staat
       setUserSkills(userSkills.filter((skill) => skill.id !== skillId));
-  
       alert("Vaardigheid succesvol verwijderd.");
     } catch (error) {
       console.error("Error bij het verwijderen van de vaardigheid:", error);
@@ -140,48 +145,42 @@ const Profile = () => {
   const handleSaveSkill = async (updatedSkill) => {
     try {
       let mediaToSave = updatedSkill.media;
-      
-      // Controleer of er nieuwe afbeeldingen zijn (die beginnen met "blob:")
-      const hasNewMedia = updatedSkill.media && 
-        updatedSkill.media.length > 0 && 
-        (updatedSkill.media[0].url.startsWith('blob:') || !updatedSkill.media[0].publicId);
-      
-      // Als er nieuwe media is, upload deze eerst naar Cloudinary
+
+      const hasNewMedia = updatedSkill.media &&
+          updatedSkill.media.length > 0 &&
+          (updatedSkill.media[0].url.startsWith('blob:') || !updatedSkill.media[0].publicId);
+
       if (hasNewMedia) {
         console.log("Nieuwe media gedetecteerd, uploaden naar Cloudinary...");
-        
-        // Haal het file-object op uit je state
+
         if (!media || media.length === 0) {
           alert("Geen bestand gevonden om te uploaden.");
           return;
         }
-        
-        const file = media[0].file; // Neem aan dat media[0].file bestaat
+
+        const file = media[0].file;
         if (!file) {
           alert("Geen geldig bestand gevonden.");
           return;
         }
-        
-        // Upload naar Cloudinary
+
         const uploadedMedia = await uploadToCloudinary(file);
         mediaToSave = [uploadedMedia];
       }
-  
-      // Update Firestore met de nieuwe media
+
       const skillRef = doc(db, "skills", updatedSkill.id);
       await updateDoc(skillRef, {
         title: updatedSkill.title,
         description: updatedSkill.description,
         media: mediaToSave,
       });
-  
-      // Update de lokale staat
+
       setUserSkills((prevSkills) =>
-        prevSkills.map((skill) =>
-          skill.id === updatedSkill.id ? {...updatedSkill, media: mediaToSave} : skill
-        )
+          prevSkills.map((skill) =>
+              skill.id === updatedSkill.id ? {...updatedSkill, media: mediaToSave} : skill
+          )
       );
-  
+
       alert("Vaardigheid succesvol bijgewerkt.");
       setEditingSkill(null);
     } catch (error) {
@@ -193,19 +192,16 @@ const Profile = () => {
   const handleMediaChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
-    // Maak een nieuw media-item met preview en het originele file-object
+
     const newMedia = [{
       id: Date.now(),
       preview: URL.createObjectURL(file),
       type: file.type.startsWith("image/") ? "image" : "video",
-      file: file // Bewaar het file-object voor latere upload
+      file: file
     }];
-  
-    // Update de media state
+
     setMedia(newMedia);
-    
-    // Update ook editingSkill als dat bestaat
+
     if (editingSkill) {
       setEditingSkill({
         ...editingSkill,
@@ -220,23 +216,23 @@ const Profile = () => {
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "frontedge_uploads"); // Zorg dat dit overeenkomt met je Cloudinary dashboard
-  
+    formData.append("upload_preset", "frontedge_uploads");
+
     try {
       const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dz59lvb9i/auto/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
+          `https://api.cloudinary.com/v1_1/dz59lvb9i/auto/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
       );
-  
+
       const data = await response.json();
-  
+
       if (data.error) {
         throw new Error(data.error.message);
       }
-  
+
       return {
         url: data.secure_url,
         type: file.type.startsWith("image/") ? "image" : "video",
@@ -251,48 +247,44 @@ const Profile = () => {
   const handlePost = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
-  
-    const user = auth.currentUser;
-    if (!user) {
+
+    if (!currentUser) {
       alert("Je moet ingelogd zijn om een vaardigheid te delen");
       return;
     }
-  
+
     setIsSubmitting(true);
-  
+
     try {
-      // Upload media files to Cloudinary
       const mediaUrls = [];
-  
+
       if (media.length > 0) {
         for (const item of media) {
           const mediaData = await uploadToCloudinary(item.file);
           mediaUrls.push(mediaData);
         }
       }
-  
-      // Save post data to Firestore
+
       const skillData = {
         title,
         description,
         media: mediaUrls,
         user: {
-          id: user.uid,
-          name: user.displayName || "Anonymous User",
-          avatar: user.photoURL || null,
+          id: currentUser.uid,
+          name: currentUser.displayName || "Anonymous User",
+          avatar: currentUser.photoURL || null,
         },
         likes: [],
         comments: 0,
         timestamp: serverTimestamp(),
       };
-  
+
       await addDoc(collection(db, "skills"), skillData);
-  
-      // Reset form
+
       setTitle("");
       setDescription("");
       setMedia([]);
-  
+
       alert(`Vaardigheid geplaatst: ${title}`);
     } catch (error) {
       console.error("Error posting skill:", error);
@@ -302,6 +294,10 @@ const Profile = () => {
     }
   };
 
+  const removeMedia = (mediaId) => {
+    setMedia(media.filter(item => item.id !== mediaId));
+  };
+
   if (loading) {
     return (
         <div className="app-container">
@@ -309,6 +305,24 @@ const Profile = () => {
           <main>
             <div className="container">
               <div className="loading-spinner">Laden...</div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+    )
+  }
+
+  if (!currentUser) {
+    return (
+        <div className="app-container">
+          <Header />
+          <main>
+            <div className="container">
+              <div className="error-state">
+                <h2>Toegang geweigerd</h2>
+                <p>Je moet ingelogd zijn om je profiel te bekijken.</p>
+                <button onClick={() => navigate('/login')}>Inloggen</button>
+              </div>
             </div>
           </main>
           <Footer />
@@ -346,161 +360,147 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    {isOwnProfile && (
-                        <div className="stat-item">
-                          <PrivacyToggle />
-                        </div>
-                    )}
+                    <div className="stat-item">
+                      <PrivacyToggle />
+                    </div>
                   </div>
 
-                  {isOwnProfile ? (
-                      <div className="profile-actions">
-                        <button onClick={toggleEdit}>Profiel bewerken</button>
-                        <button className="ghost" onClick={() => (window.location.href = "/settings")}>
-                          Instellingen
-                        </button>
-                      </div>
-                  ) : (
-                      <div className="profile-actions">
-                        <button>Volgen</button>
-                        <button className="ghost">Bericht sturen</button>
-                      </div>
-                  )}
+                  <div className="profile-actions">
+                    <button onClick={toggleEdit}>Profiel bewerken</button>
+                    <button className="ghost" onClick={() => navigate("/settings")}>
+                      Instellingen
+                    </button>
+                  </div>
                 </div>
             )}
 
             <div className="profile-content">
-              <h3>Vaardigheden</h3>
+              <h3>Mijn Vaardigheden</h3>
               <div className="feed">
                 {userSkills && userSkills.length > 0 ? (
-                  userSkills.map((skill) => (
-                    <div className="skill-card" key={skill.id}>
-                      <h3>{skill.title}</h3>
-                      <p>{skill.description}</p>
-                      {skill.media && skill.media.length > 0 && (
-                        <div className="skill-media">
-                          {skill.media[0].type === "image" ? (
-                            <img src={skill.media[0].url} alt={skill.title} className="skill-image" />
-                          ) : skill.media[0].type === "video" ? (
-                            <video src={skill.media[0].url} controls className="skill-video" />
-                          ) : null}
-                        </div>
-                      )}
-                      <div className="skill-card-footer">
-                        <div className="skill-user">
-                          <strong>Gedeeld door:</strong> {profile.name}
-                        </div>
-                        <div className="skill-actions">
-                          <button className="ghost">Like</button>
-                          <button className="ghost">Reactie</button>
-                          <button className="ghost">Delen</button>
-                          {isOwnProfile && (
-                            <>
+                    userSkills.map((skill) => (
+                        <div className="skill-card" key={skill.id}>
+                          <h3>{skill.title}</h3>
+                          <p>{skill.description}</p>
+                          {skill.media && skill.media.length > 0 && (
+                              <div className="skill-media">
+                                {skill.media[0].type === "image" ? (
+                                    <img src={skill.media[0].url} alt={skill.title} className="skill-image" />
+                                ) : skill.media[0].type === "video" ? (
+                                    <video src={skill.media[0].url} controls className="skill-video" />
+                                ) : null}
+                              </div>
+                          )}
+                          <div className="skill-card-footer">
+                            <div className="skill-user">
+                              <strong>Gedeeld door:</strong> {profile.name}
+                            </div>
+                            <div className="skill-actions">
+                              <button className="ghost">Like</button>
+                              <button className="ghost">Reactie</button>
+                              <button className="ghost">Delen</button>
                               <button
-                                className="ghost edit-button"
-                                onClick={() => handleEditSkill(skill)}
+                                  className="ghost edit-button"
+                                  onClick={() => handleEditSkill(skill)}
                               >
                                 Bewerken
                               </button>
                               <button
-                                className="ghost delete-button"
-                                onClick={() => handleDeleteSkill(skill.id)}
+                                  className="ghost delete-button"
+                                  onClick={() => handleDeleteSkill(skill.id)}
                               >
                                 Verwijderen
                               </button>
-                            </>
-                          )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
-                  <div className="empty-state">
-                    <p>Geen vaardigheden gedeeld</p>
-                    {isOwnProfile && (
-                      <button onClick={() => (window.location.href = "/")}>
+                    <div className="empty-state">
+                      <p>Geen vaardigheden gedeeld</p>
+                      <button onClick={() => navigate("/")}>
                         Deel je eerste vaardigheid
                       </button>
-                    )}
-                  </div>
+                    </div>
                 )}
               </div>
             </div>
+
             {editingSkill && (
-              <div className="edit-skill-form">
-                <h3>Vaardigheid bewerken</h3>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSaveSkill(editingSkill);
-                  }}
-                >
-                  <div className="form-group">
-                    <label htmlFor="edit-title">Titel</label>
-                    <input
-                      id="edit-title"
-                      type="text"
-                      value={editingSkill.title}
-                      onChange={(e) =>
-                        setEditingSkill({ ...editingSkill, title: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="edit-description">Beschrijving</label>
-                    <input
-                      id="edit-description"
-                      value={editingSkill.description}
-                      onChange={(e) =>
-                        setEditingSkill({ ...editingSkill, description: e.target.value })
-                      }
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="media-upload" className="media-upload-button">
-                      Kies een bestand
+                <div className="edit-skill-form">
+                  <h3>Vaardigheid bewerken</h3>
+                  <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSaveSkill(editingSkill);
+                      }}
+                  >
+                    <div className="form-group">
+                      <label htmlFor="edit-title">Titel</label>
                       <input
-                        type="file"
-                        id="media-upload"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={handleMediaChange}
+                          id="edit-title"
+                          type="text"
+                          value={editingSkill.title}
+                          onChange={(e) =>
+                              setEditingSkill({ ...editingSkill, title: e.target.value })
+                          }
+                          required
                       />
-                    </label>
-                    {media.length > 0 && (
-                      <div className="media-preview">
-                        {media.map((item) => (
-                          <div key={item.id} className="media-preview-item">
-                            {item.type === "image" ? (
-                              <img src={item.preview || "/placeholder.svg"} alt="Preview" />
-                            ) : item.type === "video" ? (
-                              <video src={item.preview} controls />
-                            ) : null}
-                            <button
-                              type="button"
-                              className="remove-media"
-                              onClick={() => removeMedia(item.id)}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                    </div>
 
-                  <div className="form-actions">
-                    <button type="button" className="ghost" onClick={() => setEditingSkill(null)}>
-                      Annuleren
-                    </button>
-                    <button type="submit">Opslaan</button>
-                  </div>
-                </form>
-              </div>
+                    <div className="form-group">
+                      <label htmlFor="edit-description">Beschrijving</label>
+                      <input
+                          id="edit-description"
+                          value={editingSkill.description}
+                          onChange={(e) =>
+                              setEditingSkill({ ...editingSkill, description: e.target.value })
+                          }
+                          rows={4}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label htmlFor="media-upload" className="media-upload-button">
+                        Kies een bestand
+                        <input
+                            type="file"
+                            id="media-upload"
+                            accept="image/*,video/*"
+                            multiple
+                            onChange={handleMediaChange}
+                        />
+                      </label>
+                      {media.length > 0 && (
+                          <div className="media-preview">
+                            {media.map((item) => (
+                                <div key={item.id} className="media-preview-item">
+                                  {item.type === "image" ? (
+                                      <img src={item.preview || "/placeholder.svg"} alt="Preview" />
+                                  ) : item.type === "video" ? (
+                                      <video src={item.preview} controls />
+                                  ) : null}
+                                  <button
+                                      type="button"
+                                      className="remove-media"
+                                      onClick={() => removeMedia(item.id)}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                            ))}
+                          </div>
+                      )}
+                    </div>
+
+                    <div className="form-actions">
+                      <button type="button" className="ghost" onClick={() => setEditingSkill(null)}>
+                        Annuleren
+                      </button>
+                      <button type="submit">Opslaan</button>
+                    </div>
+                  </form>
+                </div>
             )}
           </div>
         </main>

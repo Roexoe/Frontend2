@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useSearchParams, Link } from "react-router-dom"
+import { useSearchParams, Link, useNavigate } from "react-router-dom"
 import { collection, query, where, getDocs, orderBy, limit, startAfter } from "firebase/firestore"
 import { db } from "../../firebase"
 import Header from "../common/Header"
@@ -9,6 +9,7 @@ import Footer from "../common/Footer"
 
 const SearchResults = () => {
     const [searchParams] = useSearchParams()
+    const navigate = useNavigate()
     const [users, setUsers] = useState([])
     const [posts, setPosts] = useState([])
     const [loading, setLoading] = useState(true)
@@ -301,6 +302,11 @@ const SearchResults = () => {
         }
     }
 
+    // FIXED: Function to handle viewing a post
+    const handleViewPost = (postId) => {
+        navigate(`/skill/${postId}`)
+    }
+
     if (loading) {
         return (
             <div className="app-container">
@@ -425,7 +431,11 @@ const SearchResults = () => {
                                                 </td>
                                                 <td>{formatTimestamp(post.timestamp)}</td>
                                                 <td>
-                                                    <button className="view-post-btn">
+                                                    {/* FIXED: Added onClick handler to navigate to skill detail */}
+                                                    <button
+                                                        className="view-post-btn"
+                                                        onClick={() => handleViewPost(post.id)}
+                                                    >
                                                         Bekijk Post
                                                     </button>
                                                 </td>
