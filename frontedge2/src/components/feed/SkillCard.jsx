@@ -4,6 +4,11 @@ import { useState, useRef, useEffect } from "react"
 import { AdvancedImage } from '@cloudinary/react'
 import { fill } from "@cloudinary/url-gen/actions/resize"
 import cld from "../../cloudinary"
+// Firebase imports toevoegen
+import { doc, getDoc, getFirestore } from "firebase/firestore"
+// Importeer de afbeelding
+import skillrHandImg from "../../assets/skillr-hand.png"
+import { useNavigate } from "react-router-dom";
 
 const SkillCard = ({ skill }) => {
   const [showComments, setShowComments] = useState(false)
@@ -12,6 +17,9 @@ const SkillCard = ({ skill }) => {
   const [isHovered, setIsHovered] = useState(false)
   const cardRef = useRef(null)
   const [animateIn, setAnimateIn] = useState(false)
+  // Nieuwe state voor avatar
+  const [userAvatar, setUserAvatar] = useState(skill.user?.avatar || skillrHandImg)
+  const navigate = useNavigate();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -37,6 +45,24 @@ const SkillCard = ({ skill }) => {
     }
   }, [])
 
+  useEffect(() => {
+    const fetchUserAvatar = async () => {
+      try {
+        if (skill.user?.id) {
+          const db = getFirestore()
+          const userDoc = await getDoc(doc(db, "users", skill.user.id))
+          if (userDoc.exists() && userDoc.data().photoURL) {
+            setUserAvatar(userDoc.data().photoURL)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user avatar:", error)
+      }
+    }
+    
+    fetchUserAvatar()
+  }, [skill.user?.id])
+
   const toggleComments = () => {
     setShowComments(!showComments)
   }
@@ -48,7 +74,7 @@ const SkillCard = ({ skill }) => {
     const comment = {
       id: comments.length + 1,
       user: "Current User",
-      avatar: "/src/assets/skillr-hand.png",
+      avatar: skillrHandImg,
       content: newComment,
       timestamp: "Zojuist",
     }
@@ -86,32 +112,59 @@ const SkillCard = ({ skill }) => {
     }
   }
 
-  // Render media items (Cloudinary or regular URLs)
-  const renderMedia = (mediaItem) => {
-    if (!mediaItem) return null
+  // Voeg deze functie toe na formatTimestamp
+  const getProfileImage = (imageUrl) => {
+    if (!imageUrl) return skillrHandImg;
     
-    console.log("Rendering media item:", mediaItem)  // Debug log
-
-    if (mediaItem.type === "image") {
-      // Als het een Cloudinary afbeelding is (met publicId)
-      if (mediaItem.publicId) {
-        try {
-          const image = cld.image(mediaItem.publicId)
-          image.resize(fill().width(600).height(400))
-          return <AdvancedImage cldImg={image} alt={skill.title} />
-        } catch (error) {
-          console.error("Error rendering Cloudinary image:", error)
-          // Fallback naar gewone img tag
-          return <img src={mediaItem.url} alt={skill.title} />
-        }
+    // Controleer of het een cloudinary URL is
+    if (typeof imageUrl === 'string' && imageUrl.includes('cloudinary')) {
+      try {
+        // Creëer een Cloudinary image object
+        const cloudinaryImage = cld.image(imageUrl.split('/').pop());
+        cloudinaryImage.resize(fill().width(40).height(40));
+        return <AdvancedImage cldImg={cloudinaryImage} alt="Profielfoto" />;
+      } catch (error) {
+        console.error("Error loading Cloudinary image:", error);
+        return skillrHandImg;
       }
-      // Anders gewoon de URL gebruiken
-      return <img src={mediaItem.url} alt={skill.title} />
-    } else if (mediaItem.type === "video") {
-      return <video src={mediaItem.url} controls />
     }
-    return null
-  }
+    
+    // Fallback naar normale img voor niet-cloudinary URLs
+    return imageUrl;
+  };
+
+  // Verbeterde renderMedia functie
+  const renderMedia = (mediaItem) => {
+    if (!mediaItem) return null;
+    
+    console.log("Rendering media item:", mediaItem); // Behoud deze log
+    
+    if (mediaItem.type === "image") {
+      // ALTIJD de URL gebruiken als fallback
+      return <img src={mediaItem.url} alt={skill.title} className="skill-image" />;
+    } else if (mediaItem.type === "video") {
+      return <video src={mediaItem.url} controls className="skill-video" />;
+    }
+    return null;
+  };
+
+  // Voeg deze functie toe voor navigatie
+  const handleCardClick = (e) => {
+    // Controleer of de klik op een knop of een link was
+    if (
+      e.target.tagName === "BUTTON" || 
+      e.target.closest("button") || 
+      e.target.tagName === "A" || 
+      e.target.closest("a") ||
+      e.target.closest(".comments-section")
+    ) {
+      // Laat de originele handler de klik afhandelen
+      return;
+    }
+    
+    // Navigeer naar de detailpagina
+    navigate(`/skill/${skill.id}`);
+  };
 
   return (
     <div
@@ -119,13 +172,24 @@ const SkillCard = ({ skill }) => {
       className={`skill-card ${animateIn ? "animate-in" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick} // Voeg de onClick handler toe
+      style={{ cursor: 'pointer' }} // Geef de gebruiker een visuele indicatie dat het klikbaar is
     >
       <div className="skill-card-header">
-        <img
-          src={skill.user?.avatar || "/src/assets/skillr-hand.png"}
-          alt={skill.user?.name}
-          className="user-avatar"
-        />
+        {typeof userAvatar === 'string' ? (
+          <img
+            src={userAvatar}
+            alt={skill.user?.name}
+            className="user-avatar"
+            onError={(e) => { e.target.src = skillrHandImg; }}
+          />
+        ) : (
+          <img
+            src={skillrHandImg}
+            alt={skill.user?.name}
+            className="user-avatar"
+          />
+        )}
         <div>
           <strong>{skill.user?.name}</strong>
           <div className="timestamp">{formatTimestamp(skill.timestamp)}</div>
@@ -146,26 +210,17 @@ const SkillCard = ({ skill }) => {
           <span>{skill.likes?.length || 0} likes</span>
           <span>{skill.comments || 0} reacties</span>
         </div>
-        <div className="skill-actions">
-          <button className={`ghost ${skill.isLiked ? "active" : ""}`}>
-            <span>Like</span>
-          </button>
-          <button className="ghost" onClick={toggleComments}>
-            <span>Reacties</span>
-          </button>
-          <button className="ghost">
-            <span>Delen</span>
-          </button>
-        </div>
+        {/* Actieknoppen verwijderd - deze functionaliteit is nu alleen beschikbaar in de detailweergave */}
       </div>
 
       {showComments && (
         <div className="comments-section">
           <form onSubmit={handleAddComment} className="add-comment">
             <img 
-              src="/src/assets/skillr-hand.png" 
+              src={skillrHandImg} 
               alt="Current User" 
-              className="add-comment-avatar" 
+              className="add-comment-avatar"
+              onError={(e) => { e.target.src = skillrHandImg; }}
             />
             <div className="add-comment-input">
               <input
@@ -184,7 +239,12 @@ const SkillCard = ({ skill }) => {
             comments.map((comment) => (
               <div key={comment.id} className="comment">
                 <div className="comment-header">
-                  <img src={comment.avatar} alt={comment.user} className="comment-avatar" />
+                  <img 
+                    src={comment.avatar || skillrHandImg} 
+                    alt={comment.user} 
+                    className="comment-avatar"
+                    onError={(e) => { e.target.src = skillrHandImg; }}
+                  />
                   <span className="comment-author">{comment.user}</span>
                   <span className="comment-time">{comment.timestamp}</span>
                 </div>

@@ -15,5 +15,12 @@ service cloud.firestore {
     match /{document=**} {
       allow read, write: if request.time < timestamp.date(2025, 6, 6);
     }
+
+    // Regels voor de "skills" collectie
+    match /skills/{skillId} {
+      allow read: if true; // Iedereen mag lezen
+      allow write: if request.auth != null && request.auth.uid == resource.data.user.id; // Alleen de eigenaar mag schrijven
+      allow delete: if request.auth != null && request.auth.uid == resource.data.user.id; // Alleen de eigenaar mag verwijderen
+    }
   }
 }
