@@ -52,6 +52,9 @@ const Header = () => {
           <nav className="desktop-nav">
             {currentUser ? (
                 <>
+                  <Link to="/messages" className="nav-link">
+                    <span>Berichten</span>
+                  </Link>
                   <Link to="/logout" className="nav-link">
                     <span>Uitloggen</span>
                   </Link>
