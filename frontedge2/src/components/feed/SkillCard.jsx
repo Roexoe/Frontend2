@@ -9,7 +9,7 @@ import { doc, getDoc, getFirestore } from "firebase/firestore"
 // Importeer de afbeelding
 import skillrHandImg from "../../assets/skillr-hand.png"
 import { useNavigate } from "react-router-dom";
-import EditSkill from "./EditSkill"; // Zorg ervoor dat het pad naar EditSkill correct is
+import EditSkill from "../profile/EditSkill"; // Zorg ervoor dat het pad naar EditSkill correct is
 
 const SkillCard = ({ skill, isOwnProfile, onEdit, onDelete }) => {
   const [showComments, setShowComments] = useState(false)
