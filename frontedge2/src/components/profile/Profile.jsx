@@ -1,13 +1,25 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
 import PrivacyToggle from "../common/PrivacyToggle"
 import EditProfile from "./EditProfile"
 import { useAuth } from "../auth/AuthContextProvider"
-import { doc, getDoc, getFirestore, deleteDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
+import {
+  doc,
+  getDoc,
+  getFirestore,
+  deleteDoc,
+  updateDoc,
+  addDoc,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  increment,
+  setDoc
+} from "firebase/firestore"
 import { collection, query, where, getDocs } from "firebase/firestore"
 
 const Profile = () => {
@@ -29,39 +41,53 @@ const Profile = () => {
   const [description, setDescription] = useState("");
   const [media, setMedia] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+  const [userExists, setUserExists] = useState(true)
+  const [isOwnProfile, setIsOwnProfile] = useState(true)
 
   const { currentUser } = useAuth()
+  const { userId } = useParams() // Get userId from URL params if viewing another user's profile
   const navigate = useNavigate()
   const db = getFirestore()
 
-  // Redirect to login if not authenticated
+  // Determine which user we're viewing
+  const profileUserId = userId || currentUser?.uid
+
+  // Check if viewing own profile
   useEffect(() => {
-    if (!currentUser) {
+    setIsOwnProfile(!userId || (currentUser && userId === currentUser.uid))
+  }, [userId, currentUser])
+
+  // Redirect to login if not authenticated and trying to view own profile
+  useEffect(() => {
+    if (!userId && !currentUser) {
       navigate('/login')
       return
     }
-  }, [currentUser, navigate])
+  }, [currentUser, navigate, userId])
 
   useEffect(() => {
     const fetchUserData = async () => {
-      if (!currentUser) {
+      if (!profileUserId) {
         setLoading(false)
         return
       }
 
       try {
         setLoading(true)
-        // Haal gebruikersgegevens op uit Firestore
-        const userRef = doc(db, "users", currentUser.uid)
+        // Fetch user data from Firestore
+        const userRef = doc(db, "users", profileUserId)
         const userDoc = await getDoc(userRef)
 
         if (userDoc.exists()) {
           const userData = userDoc.data()
+          setUserExists(true)
 
-          // Haal gebruikersvaardigheden op
+          // Fetch user skills
           const skillsQuery = query(
               collection(db, "skills"),
-              where("user.id", "==", currentUser.uid)
+              where("user.id", "==", profileUserId)
           )
           const skillsSnapshot = await getDocs(skillsQuery)
           const skills = []
@@ -71,17 +97,24 @@ const Profile = () => {
           setUserSkills(skills)
 
           setProfile({
-            name: userData.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Gebruiker",
+            name: userData.displayName || userData.name || userData.email?.split('@')[0] || "Gebruiker",
             bio: userData.bio || "Geen biografie beschikbaar",
-            avatar: userData.photoURL || currentUser.photoURL || "/src/assets/skillr-hand.png",
+            avatar: userData.photoURL || userData.avatar || "/src/assets/skillr-hand.png",
+            email: userData.email,
             stats: {
               skills: skills.length,
               followers: userData.followersCount || 0,
               following: userData.followingCount || 0,
             }
           })
-        } else {
-          // Als er geen gebruikersdocument is, gebruik Auth-info
+
+          // Check if current user is following this user (only if not own profile)
+          if (currentUser && !isOwnProfile) {
+            const followers = userData.followers || []
+            setIsFollowing(followers.includes(currentUser.uid))
+          }
+        } else if (isOwnProfile && currentUser) {
+          // If viewing own profile and no Firestore doc exists, use Auth info
           const skillsQuery = query(
               collection(db, "skills"),
               where("user.id", "==", currentUser.uid)
@@ -103,19 +136,123 @@ const Profile = () => {
               following: 0,
             }
           })
+        } else {
+          setUserExists(false)
         }
       } catch (error) {
         console.error("Error fetching profile data:", error)
+        if (!isOwnProfile) {
+          setUserExists(false)
+        }
       } finally {
         setLoading(false)
       }
     }
 
     fetchUserData()
-  }, [currentUser, db])
+  }, [profileUserId, db, currentUser, isOwnProfile])
+
+  const handleFollowUser = async () => {
+    if (!currentUser) {
+      alert("Je moet ingelogd zijn om gebruikers te volgen")
+      return
+    }
+
+    if (followLoading || isOwnProfile) return
+
+    setFollowLoading(true)
+
+    try {
+      const targetUserRef = doc(db, "users", profileUserId)
+      const currentUserRef = doc(db, "users", currentUser.uid)
+
+      // Ensure both user documents exist
+      const currentUserDoc = await getDoc(currentUserRef)
+      if (!currentUserDoc.exists()) {
+        await setDoc(currentUserRef, {
+          displayName: currentUser.displayName || currentUser.email?.split('@')[0] || "Gebruiker",
+          email: currentUser.email,
+          photoURL: currentUser.photoURL || null,
+          bio: "",
+          followersCount: 0,
+          followingCount: 0,
+          followers: [],
+          following: []
+        })
+      }
+
+      if (isFollowing) {
+        // Unfollow
+        await updateDoc(targetUserRef, {
+          followers: arrayRemove(currentUser.uid),
+          followersCount: increment(-1)
+        })
+
+        await updateDoc(currentUserRef, {
+          following: arrayRemove(profileUserId),
+          followingCount: increment(-1)
+        })
+
+        setIsFollowing(false)
+        setProfile(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            followers: prev.stats.followers - 1
+          }
+        }))
+
+        console.log("User unfollowed successfully")
+      } else {
+        // Follow
+        await updateDoc(targetUserRef, {
+          followers: arrayUnion(currentUser.uid),
+          followersCount: increment(1)
+        })
+
+        await updateDoc(currentUserRef, {
+          following: arrayUnion(profileUserId),
+          followingCount: increment(1)
+        })
+
+        setIsFollowing(true)
+        setProfile(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            followers: prev.stats.followers + 1
+          }
+        }))
+
+        console.log("User followed successfully")
+      }
+    } catch (error) {
+      console.error("Error updating follow status:", error)
+      alert("Er is een fout opgetreden bij het bijwerken van de volg-status")
+    } finally {
+      setFollowLoading(false)
+    }
+  }
+
+  const handleSendMessage = async () => {
+    if (!currentUser) {
+      alert("Je moet ingelogd zijn om berichten te sturen")
+      return
+    }
+
+    // TODO: Implement messaging functionality
+    alert("Bericht functionaliteit komt binnenkort!")
+  }
 
   const toggleEdit = () => {
     setIsEditing(!isEditing)
+  }
+
+  const handleStatsClick = (type) => {
+    const targetUserId = userId || currentUser?.uid
+    if (type === 'followers' || type === 'following') {
+      navigate(`/profile/${targetUserId}/${type}`)
+    }
   }
 
   const handleProfileUpdate = async (updatedProfile) => {
@@ -298,6 +435,20 @@ const Profile = () => {
     setMedia(media.filter(item => item.id !== mediaId));
   };
 
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return "Onbekend"
+
+    try {
+      if (timestamp.seconds) {
+        const date = new Date(timestamp.seconds * 1000)
+        return date.toLocaleDateString('nl-NL')
+      }
+      return timestamp
+    } catch (error) {
+      return "Onbekend"
+    }
+  }
+
   if (loading) {
     return (
         <div className="app-container">
@@ -312,7 +463,25 @@ const Profile = () => {
     )
   }
 
-  if (!currentUser) {
+  if (!userExists) {
+    return (
+        <div className="app-container">
+          <Header />
+          <main>
+            <div className="container">
+              <div className="error-state">
+                <h2>Gebruiker niet gevonden</h2>
+                <p>De gebruiker die je zoekt bestaat niet of is niet beschikbaar.</p>
+                <button onClick={() => navigate('/')}>Terug naar hoofdpagina</button>
+              </div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+    )
+  }
+
+  if (!isOwnProfile && !currentUser) {
     return (
         <div className="app-container">
           <Header />
@@ -320,7 +489,7 @@ const Profile = () => {
             <div className="container">
               <div className="error-state">
                 <h2>Toegang geweigerd</h2>
-                <p>Je moet ingelogd zijn om je profiel te bekijken.</p>
+                <p>Je moet ingelogd zijn om profielen te bekijken.</p>
                 <button onClick={() => navigate('/login')}>Inloggen</button>
               </div>
             </div>
@@ -335,7 +504,7 @@ const Profile = () => {
         <Header />
         <main>
           <div className="container">
-            {isEditing ? (
+            {isEditing && isOwnProfile ? (
                 <EditProfile profile={profile} onSave={handleProfileUpdate} onCancel={toggleEdit} />
             ) : (
                 <div className="profile">
@@ -344,38 +513,76 @@ const Profile = () => {
                   <div className="profile-info">
                     <h2>{profile.name}</h2>
                     <p className="profile-bio">{profile.bio}</p>
+                    {profile.email && !isOwnProfile && (
+                        <p className="profile-email">{profile.email}</p>
+                    )}
 
                     <div className="profile-stats">
-                      <div className="stat-item">
+                      <div
+                          className="stat-item clickable"
+                          onClick={() => handleStatsClick('skills')}
+                      >
                         <span className="stat-value">{profile.stats.skills}</span>
                         <span className="stat-label">Vaardigheden</span>
                       </div>
-                      <div className="stat-item">
+                      <div
+                          className="stat-item clickable"
+                          onClick={() => handleStatsClick('followers')}
+                      >
                         <span className="stat-value">{profile.stats.followers}</span>
                         <span className="stat-label">Volgers</span>
                       </div>
-                      <div className="stat-item">
+                      <div
+                          className="stat-item clickable"
+                          onClick={() => handleStatsClick('following')}
+                      >
                         <span className="stat-value">{profile.stats.following}</span>
                         <span className="stat-label">Volgend</span>
                       </div>
                     </div>
 
-                    <div className="stat-item">
-                      <PrivacyToggle />
-                    </div>
+                    {isOwnProfile && (
+                        <div className="stat-item">
+                          <PrivacyToggle />
+                        </div>
+                    )}
                   </div>
 
                   <div className="profile-actions">
-                    <button onClick={toggleEdit}>Profiel bewerken</button>
-                    <button className="ghost" onClick={() => navigate("/settings")}>
-                      Instellingen
-                    </button>
+                    {isOwnProfile ? (
+                        <>
+                          <button onClick={toggleEdit}>Profiel bewerken</button>
+                          <button className="ghost" onClick={() => navigate("/settings")}>
+                            Instellingen
+                          </button>
+                        </>
+                    ) : (
+                        <>
+                          {currentUser && (
+                              <button
+                                  onClick={handleFollowUser}
+                                  disabled={followLoading}
+                                  className={isFollowing ? "following" : ""}
+                              >
+                                {followLoading
+                                    ? "Laden..."
+                                    : isFollowing
+                                        ? "Ontvolgen"
+                                        : "Volgen"
+                                }
+                              </button>
+                          )}
+                          <button className="ghost" onClick={handleSendMessage}>
+                            Bericht sturen
+                          </button>
+                        </>
+                    )}
                   </div>
                 </div>
             )}
 
             <div className="profile-content">
-              <h3>Mijn Vaardigheden</h3>
+              <h3>{isOwnProfile ? "Mijn Vaardigheden" : `Vaardigheden van ${profile.name}`}</h3>
               <div className="feed">
                 {userSkills && userSkills.length > 0 ? (
                     userSkills.map((skill) => (
@@ -395,38 +602,51 @@ const Profile = () => {
                             <div className="skill-user">
                               <strong>Gedeeld door:</strong> {profile.name}
                             </div>
+                            {!isOwnProfile && skill.timestamp && (
+                                <div className="skill-meta">
+                                  <span className="skill-date">
+                                    {formatTimestamp(skill.timestamp)}
+                                  </span>
+                                </div>
+                            )}
                             <div className="skill-actions">
                               <button className="ghost">Like</button>
                               <button className="ghost">Reactie</button>
                               <button className="ghost">Delen</button>
-                              <button
-                                  className="ghost edit-button"
-                                  onClick={() => handleEditSkill(skill)}
-                              >
-                                Bewerken
-                              </button>
-                              <button
-                                  className="ghost delete-button"
-                                  onClick={() => handleDeleteSkill(skill.id)}
-                              >
-                                Verwijderen
-                              </button>
+                              {isOwnProfile && (
+                                  <>
+                                    <button
+                                        className="ghost edit-button"
+                                        onClick={() => handleEditSkill(skill)}
+                                    >
+                                      Bewerken
+                                    </button>
+                                    <button
+                                        className="ghost delete-button"
+                                        onClick={() => handleDeleteSkill(skill.id)}
+                                    >
+                                      Verwijderen
+                                    </button>
+                                  </>
+                              )}
                             </div>
                           </div>
                         </div>
                     ))
                 ) : (
                     <div className="empty-state">
-                      <p>Geen vaardigheden gedeeld</p>
-                      <button onClick={() => navigate("/")}>
-                        Deel je eerste vaardigheid
-                      </button>
+                      <p>{isOwnProfile ? "Geen vaardigheden gedeeld" : `${profile.name} heeft nog geen vaardigheden gedeeld`}</p>
+                      {isOwnProfile && (
+                          <button onClick={() => navigate("/")}>
+                            Deel je eerste vaardigheid
+                          </button>
+                      )}
                     </div>
                 )}
               </div>
             </div>
 
-            {editingSkill && (
+            {editingSkill && isOwnProfile && (
                 <div className="edit-skill-form">
                   <h3>Vaardigheid bewerken</h3>
                   <form

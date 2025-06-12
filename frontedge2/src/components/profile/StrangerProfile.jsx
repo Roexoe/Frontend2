@@ -5,7 +5,16 @@ import { useParams, useNavigate } from "react-router-dom"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
 import { useAuth } from "../auth/AuthContextProvider"
-import { doc, getDoc, getFirestore } from "firebase/firestore"
+import {
+    doc,
+    getDoc,
+    getFirestore,
+    updateDoc,
+    arrayUnion,
+    arrayRemove,
+    increment,
+    setDoc
+} from "firebase/firestore"
 import { collection, query, where, getDocs } from "firebase/firestore"
 
 const StrangerProfile = () => {
@@ -22,6 +31,8 @@ const StrangerProfile = () => {
     const [loading, setLoading] = useState(true)
     const [userSkills, setUserSkills] = useState([])
     const [userExists, setUserExists] = useState(false)
+    const [isFollowing, setIsFollowing] = useState(false)
+    const [followLoading, setFollowLoading] = useState(false)
 
     const { currentUser } = useAuth()
     const { userId } = useParams()
@@ -77,6 +88,12 @@ const StrangerProfile = () => {
                             following: userData.followingCount || 0,
                         }
                     })
+
+                    // Check if current user is following this user
+                    if (currentUser) {
+                        const followers = userData.followers || []
+                        setIsFollowing(followers.includes(currentUser.uid))
+                    }
                 } else {
                     setUserExists(false)
                 }
@@ -89,7 +106,13 @@ const StrangerProfile = () => {
         }
 
         fetchUserData()
-    }, [userId, db])
+    }, [userId, db, currentUser])
+
+    const handleStatsClick = (type) => {
+        if (type === 'followers' || type === 'following') {
+            navigate(`/profile/${userId}/${type}`)
+        }
+    }
 
     const handleFollowUser = async () => {
         if (!currentUser) {
@@ -97,8 +120,80 @@ const StrangerProfile = () => {
             return
         }
 
-        // TODO: Implement follow functionality
-        alert("Volg functionaliteit komt binnenkort!")
+        if (followLoading) return
+
+        setFollowLoading(true)
+
+        try {
+            const targetUserRef = doc(db, "users", userId)
+            const currentUserRef = doc(db, "users", currentUser.uid)
+
+            // Ensure both user documents exist
+            const currentUserDoc = await getDoc(currentUserRef)
+            if (!currentUserDoc.exists()) {
+                await setDoc(currentUserRef, {
+                    displayName: currentUser.displayName || currentUser.email?.split('@')[0] || "Gebruiker",
+                    email: currentUser.email,
+                    photoURL: currentUser.photoURL || null,
+                    bio: "",
+                    followersCount: 0,
+                    followingCount: 0,
+                    followers: [],
+                    following: []
+                })
+            }
+
+            if (isFollowing) {
+                // Unfollow
+                await updateDoc(targetUserRef, {
+                    followers: arrayRemove(currentUser.uid),
+                    followersCount: increment(-1)
+                })
+
+                await updateDoc(currentUserRef, {
+                    following: arrayRemove(userId),
+                    followingCount: increment(-1)
+                })
+
+                setIsFollowing(false)
+                setProfile(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        followers: prev.stats.followers - 1
+                    }
+                }))
+
+                console.log("User unfollowed successfully")
+            } else {
+                // Follow
+                await updateDoc(targetUserRef, {
+                    followers: arrayUnion(currentUser.uid),
+                    followersCount: increment(1)
+                })
+
+                await updateDoc(currentUserRef, {
+                    following: arrayUnion(userId),
+                    followingCount: increment(1)
+                })
+
+                setIsFollowing(true)
+                setProfile(prev => ({
+                    ...prev,
+                    stats: {
+                        ...prev.stats,
+                        followers: prev.stats.followers + 1
+                    }
+                }))
+
+                console.log("User followed successfully")
+            }
+        } catch (error) {
+            console.error("Error updating follow status:", error)
+            alert("Er is een fout opgetreden bij het bijwerken van de volg-status")
+        } finally {
+            setFollowLoading(false)
+        }
     }
 
     const handleSendMessage = async () => {
@@ -193,7 +288,20 @@ const StrangerProfile = () => {
                         </div>
 
                         <div className="profile-actions">
-                            <button onClick={handleFollowUser}>Volgen</button>
+                            {currentUser && (
+                                <button
+                                    onClick={handleFollowUser}
+                                    disabled={followLoading}
+                                    className={isFollowing ? "following" : ""}
+                                >
+                                    {followLoading
+                                        ? "Laden..."
+                                        : isFollowing
+                                            ? "Ontvolgen"
+                                            : "Volgen"
+                                    }
+                                </button>
+                            )}
                             <button className="ghost" onClick={handleSendMessage}>
                                 Bericht sturen
                             </button>
@@ -232,8 +340,8 @@ const StrangerProfile = () => {
                                             <div className="skill-meta">
                                                 {skill.timestamp && (
                                                     <span className="skill-date">
-                            {formatTimestamp(skill.timestamp)}
-                          </span>
+                                                        {formatTimestamp(skill.timestamp)}
+                                                    </span>
                                                 )}
                                             </div>
                                             <div className="skill-actions">

@@ -15,6 +15,8 @@ import Chat from "./components/chat/Chat"
 import SearchResults from './components/search/SearchResultsComponent.jsx'
 import SkillDetail from "./components/skill/SkillDetail"
 import StrangerProfile from './components/profile/StrangerProfile'
+import FollowersFollowing from './components/profile/FollowersFollowing.jsx'
+
 
 function App() {
   return (
@@ -34,6 +36,9 @@ function App() {
             <Route path="/messages" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/skill/:skillId" element={<SkillDetail />} />
             <Route path="/profile/:userId" element={<StrangerProfile />} />
+            <Route path="/profile/:userId/followers" element={<FollowersFollowing />} />
+            <Route path="/profile/:userId/following" element={<FollowersFollowing />} />
+
           </Routes>
         </AuthProvider>
       </Router>
