@@ -32,7 +32,9 @@ const Settings = () => {
         // Haal info op van elke geblokkeerde gebruiker
         if (blocked.length > 0) {
           const userDocs = await Promise.all(
-            blocked.map(uid => getDoc(doc(db, "users", uid)))
+            blocked
+              .filter(uid => typeof uid === "string" && uid.length > 0)
+              .map(uid => getDoc(doc(db, "users", uid)))
           )
           setBlockedUserInfos(
             userDocs
