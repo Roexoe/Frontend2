@@ -94,9 +94,6 @@ const Header = () => {
                   <Link to="/profile" onClick={toggleMobileMenu}>
                     Profiel
                   </Link>
-                  <Link to="/notifications" onClick={toggleMobileMenu}>
-                    Meldingen
-                  </Link>
                   <Link to="/messages" onClick={toggleMobileMenu}>
                     Berichten
                   </Link>
