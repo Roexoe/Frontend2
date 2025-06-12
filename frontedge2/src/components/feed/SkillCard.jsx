@@ -9,8 +9,9 @@ import { doc, getDoc, getFirestore } from "firebase/firestore"
 // Importeer de afbeelding
 import skillrHandImg from "../../assets/skillr-hand.png"
 import { useNavigate } from "react-router-dom";
+import EditSkill from "../profile/EditSkill"; // Zorg ervoor dat het pad naar EditSkill correct is
 
-const SkillCard = ({ skill }) => {
+const SkillCard = ({ skill, isOwnProfile, onEdit, onDelete }) => {
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState(skill.commentsList || [])
   const [newComment, setNewComment] = useState("")
@@ -19,6 +20,8 @@ const SkillCard = ({ skill }) => {
   const [animateIn, setAnimateIn] = useState(false)
   // Nieuwe state voor avatar
   const [userAvatar, setUserAvatar] = useState(skill.user?.avatar || skillrHandImg)
+  const [editingSkill, setEditingSkill] = useState(null); // State voor het bewerken van vaardigheden
+  const [media, setMedia] = useState([]); // Nieuwe state voor media
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,6 +85,16 @@ const SkillCard = ({ skill }) => {
     setComments([comment, ...comments])
     setNewComment("")
   }
+
+  const handleSaveSkill = (updatedSkill) => {
+    // Logica om de vaardigheid op te slaan (bijv. naar een API of state management)
+    console.log("Skill saved:", updatedSkill)
+    setEditingSkill(null)
+  }
+
+  const handleMediaChange = (newMedia) => {
+    setMedia(newMedia);
+  };
 
   // Format timestamp to relative time
   const formatTimestamp = (timestamp) => {
@@ -213,6 +226,17 @@ const SkillCard = ({ skill }) => {
         {/* Actieknoppen verwijderd - deze functionaliteit is nu alleen beschikbaar in de detailweergave */}
       </div>
 
+      {isOwnProfile && (
+        <div className="skill-actions">
+          <button className="ghost edit-button" onClick={onEdit}>
+            Bewerken
+          </button>
+          <button className="ghost delete-button" onClick={onDelete}>
+            Verwijderen
+          </button>
+        </div>
+      )}
+
       {showComments && (
         <div className="comments-section">
           <form onSubmit={handleAddComment} className="add-comment">
@@ -260,6 +284,21 @@ const SkillCard = ({ skill }) => {
           ) : (
             <p>Nog geen reacties. Wees de eerste!</p>
           )}
+        </div>
+      )}
+
+      {editingSkill && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <EditSkill
+              skill={editingSkill}
+              onSave={handleSaveSkill}
+              onCancel={() => setEditingSkill(null)}
+              onMediaChange={handleMediaChange}
+              media={media}
+              setMedia={setMedia}
+            />
+          </div>
         </div>
       )}
     </div>
