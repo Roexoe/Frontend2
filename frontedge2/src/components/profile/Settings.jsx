@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getFirestore, doc, updateDoc, getDoc, arrayRemove } from "firebase/firestore"
+import { getFirestore, doc, updateDoc, getDoc, arrayRemove, arrayUnion } from "firebase/firestore"
 import { getAuth, deleteUser } from "firebase/auth"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
@@ -14,20 +14,35 @@ const Settings = () => {
   const auth = getAuth()
 
   const [blockedUsers, setBlockedUsers] = useState([])
+  const [blockedUserInfos, setBlockedUserInfos] = useState([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteCountdown, setDeleteCountdown] = useState(5)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isGoogleUser, setIsGoogleUser] = useState(false)
 
+  // Haal geblokkeerde user IDs op en daarna hun info
   useEffect(() => {
     if (!currentUser) return
     const fetchSettings = async () => {
       const userRef = doc(db, "users", currentUser.uid)
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
-        setBlockedUsers(userSnap.data().blockedUsers || [])
+        const blocked = userSnap.data().blockedUsers || []
+        setBlockedUsers(blocked)
+        // Haal info op van elke geblokkeerde gebruiker
+        if (blocked.length > 0) {
+          const userDocs = await Promise.all(
+            blocked.map(uid => getDoc(doc(db, "users", uid)))
+          )
+          setBlockedUserInfos(
+            userDocs
+              .filter(docSnap => docSnap.exists())
+              .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          )
+        } else {
+          setBlockedUserInfos([])
+        }
       }
-      // Check if user is Google user
       setIsGoogleUser(
         currentUser.providerData.some((p) => p.providerId === "google.com")
       )
@@ -35,13 +50,23 @@ const Settings = () => {
     fetchSettings()
   }, [currentUser, db])
 
-  // Unblock user in Firestore
+  // Blokkeer een gebruiker (voorbeeld, voeg deze functie toe waar je wilt blokkeren)
+  const blockUser = async (userId) => {
+    if (!currentUser) return
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      blockedUsers: arrayUnion(userId),
+    })
+    setBlockedUsers(prev => [...prev, userId])
+  }
+
+  // Deblokkeer gebruiker
   const unblockUser = async (userId) => {
     if (!currentUser) return
     await updateDoc(doc(db, "users", currentUser.uid), {
       blockedUsers: arrayRemove(userId),
     })
-    setBlockedUsers(blockedUsers.filter((user) => user.id !== userId))
+    setBlockedUsers(blockedUsers.filter((id) => id !== userId))
+    setBlockedUserInfos(blockedUserInfos.filter((user) => user.id !== userId))
   }
 
   // Delete profile with confirmation
@@ -68,9 +93,7 @@ const Settings = () => {
 
   const actuallyDeleteProfile = async () => {
     try {
-      // Remove user doc from Firestore
       await updateDoc(doc(db, "users", currentUser.uid), { deleted: true })
-      // Delete user from Auth
       await deleteUser(auth.currentUser)
       alert("Je profiel is verwijderd.")
       window.location.href = "/"
@@ -84,9 +107,8 @@ const Settings = () => {
 
   // Report user (example: open a modal or send to Firestore)
   const handleReportUser = (user) => {
-    // You could open a modal or send a report to Firestore here
     alert(`Gebruiker ${user.name} is gerapporteerd. Dank voor je melding!`)
-    // Example: addDoc(collection(db, "reports"), { reportedUser: user.id, reporter: currentUser.uid, ... })
+    // Voorbeeld: addDoc(collection(db, "reports"), { reportedUser: user.id, reporter: currentUser.uid, ... })
   }
 
   return (
@@ -105,9 +127,9 @@ const Settings = () => {
               <div className="block-user-container">
                 <h4>Geblokkeerde gebruikers</h4>
                 <p>Geblokkeerde gebruikers kunnen je profiel niet zien en geen berichten naar je sturen.</p>
-                {blockedUsers.length > 0 ? (
+                {blockedUserInfos.length > 0 ? (
                   <div className="blocked-users-list">
-                    {blockedUsers.map((user) => (
+                    {blockedUserInfos.map((user) => (
                       <div key={user.id} className="blocked-user-item">
                         <div className="blocked-user-info">
                           <img
