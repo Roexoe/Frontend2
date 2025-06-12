@@ -33,6 +33,7 @@ const StrangerProfile = () => {
     const [userExists, setUserExists] = useState(false)
     const [isFollowing, setIsFollowing] = useState(false)
     const [followLoading, setFollowLoading] = useState(false)
+    const [canView, setCanView] = useState(false)
 
     const { currentUser } = useAuth()
     const { userId } = useParams()
@@ -107,6 +108,17 @@ const StrangerProfile = () => {
 
         fetchUserData()
     }, [userId, db, currentUser])
+
+    useEffect(() => {
+        if (!profile) return;
+        if (!profile.isPrivate) {
+            setCanView(true);
+        } else if (currentUser && (currentUser.uid === userId || (profile.followers || []).includes(currentUser.uid))) {
+            setCanView(true);
+        } else {
+            setCanView(false);
+        }
+    }, [profile, currentUser, userId]);
 
     const handleStatsClick = (type) => {
         if (type === 'followers' || type === 'following') {
@@ -206,6 +218,25 @@ const StrangerProfile = () => {
         alert("Bericht functionaliteit komt binnenkort!")
     }
 
+    const handleBlockUser = async () => {
+        if (!currentUser) {
+            alert("Je moet ingelogd zijn om te blokkeren")
+            return
+        }
+        try {
+            await updateDoc(doc(db, "users", currentUser.uid), {
+                blockedUsers: arrayUnion({
+                    id: userId,
+                    name: profile.name,
+                    avatar: profile.avatar,
+                }),
+            });
+            alert("Gebruiker is geblokkeerd.");
+        } catch (error) {
+            alert("Blokkeren mislukt.");
+        }
+    };
+
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return "Onbekend"
 
@@ -250,6 +281,28 @@ const StrangerProfile = () => {
                 <Footer />
             </div>
         )
+    }
+
+    if (!canView) {
+        return (
+            <div className="app-container">
+                <Header />
+                <main>
+                    <div className="container">
+                        <div className="profile">
+                            <img src={profile.avatar || "/placeholder.svg"} alt="Profile Avatar" className="profile-avatar" />
+                            <div className="profile-info">
+                                <h2>{profile.name}</h2>
+                                <p className="profile-bio" style={{ fontStyle: "italic", color: "#888" }}>
+                                    Dit profiel is privé.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
     }
 
     return (
@@ -305,6 +358,11 @@ const StrangerProfile = () => {
                             <button className="ghost" onClick={handleSendMessage}>
                                 Bericht sturen
                             </button>
+                            {currentUser && currentUser.uid !== userId && (
+                                <button className="ghost" onClick={handleBlockUser}>
+                                    Blokkeer gebruiker
+                                </button>
+                            )}
                         </div>
                     </div>
 
