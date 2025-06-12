@@ -208,14 +208,12 @@ const StrangerProfile = () => {
         }
     }
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = () => {
         if (!currentUser) {
             alert("Je moet ingelogd zijn om berichten te sturen")
             return
         }
-
-        // TODO: Implement messaging functionality
-        alert("Bericht functionaliteit komt binnenkort!")
+        navigate(`/chat/${profile.id || userId}`); // Gebruik het juiste id veld
     }
 
     const handleBlockUser = async () => {

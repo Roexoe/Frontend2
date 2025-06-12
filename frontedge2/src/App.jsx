@@ -36,6 +36,7 @@ function App() {
             <Route path="/profile/:userId" element={<StrangerProfile />} />
             <Route path="/profile/:userId/followers" element={<FollowersFollowing />} />
             <Route path="/profile/:userId/following" element={<FollowersFollowing />} />
+            <Route path="/chat/:userId" element={<Chat />} />
 
           </Routes>
         </AuthProvider>

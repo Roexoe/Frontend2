@@ -236,14 +236,12 @@ const Profile = () => {
     }
   }
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!currentUser) {
       alert("Je moet ingelogd zijn om berichten te sturen")
       return
     }
-
-    // TODO: Implement messaging functionality
-    alert("Bericht functionaliteit komt binnenkort!")
+    navigate(`/chat/${profile.id || profileUserId}`); // Gebruik het juiste id veld
   }
 
   const toggleEdit = () => {
