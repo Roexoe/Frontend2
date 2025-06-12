@@ -2273,3 +2273,81 @@ input:checked + .toggle-slider:before {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
 }
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  background-color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ccc;
+}
+
+.user-details h3 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: #222;
+}
+
+.user-bio {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.followers-count {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.user-actions button {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.user-actions button:hover {
+  background-color: #e0e0e0;
+}
+
+.user-actions .following {
+  background-color: #d9534f;
+  color: #fff;
+}
+
+.user-actions .following:hover {
+  background-color: #c9302c;
+}
