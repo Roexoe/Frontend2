@@ -14,7 +14,6 @@ const Settings = () => {
   const auth = getAuth()
 
   const [blockedUsers, setBlockedUsers] = useState([])
-  const [blockedUserInfos, setBlockedUserInfos] = useState([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteCountdown, setDeleteCountdown] = useState(5)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -27,23 +26,8 @@ const Settings = () => {
       const userRef = doc(db, "users", currentUser.uid)
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
-        const blocked = userSnap.data().blockedUsers || []
-        setBlockedUsers(blocked)
-        // Haal info op van elke geblokkeerde gebruiker
-        if (blocked.length > 0) {
-          const userDocs = await Promise.all(
-            blocked
-              .filter(uid => typeof uid === "string" && uid.length > 0)
-              .map(uid => getDoc(doc(db, "users", uid)))
-          )
-          setBlockedUserInfos(
-            userDocs
-              .filter(docSnap => docSnap.exists())
-              .map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
-          )
-        } else {
-          setBlockedUserInfos([])
-        }
+        // Use the objects directly!
+        setBlockedUsers(userSnap.data().blockedUsers || [])
       }
       setIsGoogleUser(
         currentUser.providerData.some((p) => p.providerId === "google.com")
@@ -64,11 +48,13 @@ const Settings = () => {
   // Deblokkeer gebruiker
   const unblockUser = async (userId) => {
     if (!currentUser) return
+    // Find the blocked user object
+    const userObj = blockedUsers.find(u => u.id === userId)
+    if (!userObj) return
     await updateDoc(doc(db, "users", currentUser.uid), {
-      blockedUsers: arrayRemove(userId),
+      blockedUsers: arrayRemove(userObj),
     })
-    setBlockedUsers(blockedUsers.filter((id) => id !== userId))
-    setBlockedUserInfos(blockedUserInfos.filter((user) => user.id !== userId))
+    setBlockedUsers(blockedUsers.filter((user) => user.id !== userId))
   }
 
   // Delete profile with confirmation
@@ -129,9 +115,9 @@ const Settings = () => {
               <div className="block-user-container">
                 <h4>Geblokkeerde gebruikers</h4>
                 <p>Geblokkeerde gebruikers kunnen je profiel niet zien en geen berichten naar je sturen.</p>
-                {blockedUserInfos.length > 0 ? (
+                {blockedUsers.length > 0 ? (
                   <div className="blocked-users-list">
-                    {blockedUserInfos.map((user) => (
+                    {blockedUsers.map((user) => (
                       <div key={user.id} className="blocked-user-item">
                         <div className="blocked-user-info">
                           <img
@@ -141,18 +127,9 @@ const Settings = () => {
                           />
                           <span>{user.name}</span>
                         </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button className="ghost" onClick={() => unblockUser(user.id)}>
-                            Deblokkeren
-                          </button>
-                          <button
-                            className="ghost"
-                            style={{ color: "var(--accent)" }}
-                            onClick={() => handleReportUser(user)}
-                          >
-                            Rapporteren
-                          </button>
-                        </div>
+                        <button className="ghost" onClick={() => unblockUser(user.id)}>
+                          Deblokkeren
+                        </button>
                       </div>
                     ))}
                   </div>

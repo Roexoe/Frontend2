@@ -83,6 +83,7 @@ const StrangerProfile = () => {
                         bio: userData.bio || "Geen biografie beschikbaar",
                         avatar: userData.photoURL || userData.avatar || "/src/assets/skillr-hand.png",
                         email: userData.email,
+                        isPrivate: userData.isPrivate || false, // <-- ADD THIS LINE
                         stats: {
                             skills: skills.length,
                             followers: userData.followersCount || 0,
