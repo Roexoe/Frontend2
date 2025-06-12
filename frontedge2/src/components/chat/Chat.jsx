@@ -6,9 +6,12 @@ import { db } from "../../firebase"
 import { useAuth } from "../auth/AuthContextProvider"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
+import { useNavigate, useParams } from "react-router-dom"
 
 const Chat = () => {
   const { currentUser } = useAuth()
+  const { userId } = useParams()
+  const navigate = useNavigate()
   const [contacts, setContacts] = useState([])
   const [activeContact, setActiveContact] = useState(null)
   const [messages, setMessages] = useState([])
@@ -30,6 +33,14 @@ const Chat = () => {
     }
     fetchContacts()
   }, [currentUser])
+
+  // Als userId uit de URL bestaat, stel direct de juiste contact in
+  useEffect(() => {
+    if (userId && contacts.length > 0) {
+      const found = contacts.find((c) => c.id === userId)
+      if (found) setActiveContact(found)
+    }
+  }, [contacts, userId])
 
   // Real-time berichten ophalen
   const chatId = activeContact ? [currentUser.uid, activeContact.id].sort().join("_") : null
@@ -80,6 +91,12 @@ const Chat = () => {
     // Voeg eventueel toe aan contactenlijst in Firestore
   }
 
+  const handleProfileClick = () => {
+    if (activeContact) {
+      navigate(`/profile/${activeContact.id}`)
+    }
+  }
+
   return (
     <div className="app-container">
       <Header />
@@ -112,7 +129,7 @@ const Chat = () => {
                     onClick={() => handleStartChat(user)}
                   >
                     <img
-                      src={user.avatar || "/placeholder.svg"}
+                      src={user.photoURL || user.avatar || "/placeholder.svg"}
                       alt={user.name}
                       style={{ width: 32, borderRadius: "50%", marginRight: 8 }}
                     />
@@ -134,7 +151,11 @@ const Chat = () => {
                   }`}
                   onClick={() => setActiveContact(contact)}
                 >
-                  <img src={contact.avatar || "/placeholder.svg"} alt={contact.name} className="chat-contact-avatar" />
+                  <img
+                    src={contact.photoURL || contact.avatar || "/placeholder.svg"}
+                    alt={contact.name}
+                    className="chat-contact-avatar"
+                  />
                   <div className="chat-contact-info">
                     <div className="chat-contact-name">{contact.name}</div>
                   </div>
@@ -147,12 +168,18 @@ const Chat = () => {
                 <>
                   <div className="chat-header">
                     <img
-                      src={activeContact.avatar || "/placeholder.svg"}
+                      src={activeContact.photoURL || activeContact.avatar || "/placeholder.svg"}
                       alt={activeContact.name}
                       className="chat-contact-avatar"
                     />
                     <div className="chat-contact-info">
-                      <div className="chat-contact-name">{activeContact.name}</div>
+                      <div
+                        className="chat-contact-name"
+                        style={{ cursor: "pointer", textDecoration: "underline" }}
+                        onClick={handleProfileClick}
+                      >
+                        {activeContact.name}
+                      </div>
                     </div>
                   </div>
                   <div className="chat-messages">
