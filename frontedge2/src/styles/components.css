@@ -2117,7 +2117,6 @@ input:checked + .toggle-slider:before {
   cursor: pointer;
   transition: all var(--transition-normal);
   text-decoration: none;
-  display: inline-block;
 }
 
 .view-profile-btn:hover,
@@ -2273,4 +2272,22 @@ input:checked + .toggle-slider:before {
   max-width: 100%;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
+}
+
+/* Voeg toe aan je CSS-bestand */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 1rem;
+  max-width: 500px;
+  width: 100%;
 }
