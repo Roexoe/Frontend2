@@ -290,11 +290,10 @@ const SearchResults = () => {
                 ...doc.data(),
             }))
 
-            // Fallback: als geen resultaten met titleLower, probeer originele velden
             if (newPosts.length === 0) {
                 let fallbackQuery = query(
                     collection(db, "skills"),
-                    limit(50) // Beperk voor prestaties
+                    limit(50) 
                 )
 
                 const fallbackSnapshot = await getDocs(fallbackQuery)
