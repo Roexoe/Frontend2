@@ -56,30 +56,50 @@ const SearchResults = () => {
         setUsersLoading(true)
 
         try {
+            // Converteer zoekterm naar lowercase voor case-insensitive zoeken
+            const lowerSearchQuery = searchQuery.toLowerCase()
+
             let usersQuery = query(
                 collection(db, "users"),
-                where("name", ">=", searchQuery),
-                where("name", "<=", searchQuery + "\uf8ff"),
-                orderBy("name"),
+                where("nameLower", ">=", lowerSearchQuery),
+                where("nameLower", "<=", lowerSearchQuery + "\uf8ff"),
+                orderBy("nameLower"),
                 limit(ITEMS_PER_PAGE)
             )
 
             if (!isInitialSearch && lastUserDoc) {
                 usersQuery = query(
                     collection(db, "users"),
-                    where("name", ">=", searchQuery),
-                    where("name", "<=", searchQuery + "\uf8ff"),
-                    orderBy("name"),
+                    where("nameLower", ">=", lowerSearchQuery),
+                    where("nameLower", "<=", lowerSearchQuery + "\uf8ff"),
+                    orderBy("nameLower"),
                     startAfter(lastUserDoc),
                     limit(ITEMS_PER_PAGE)
                 )
             }
 
             const usersSnapshot = await getDocs(usersQuery)
-            const newUsers = usersSnapshot.docs.map((doc) => ({
+            let newUsers = usersSnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }))
+
+            // Fallback: als geen resultaten met nameLower, probeer originele velden
+            if (newUsers.length === 0) {
+                let fallbackQuery = query(
+                    collection(db, "users"),
+                    limit(50) // Beperk voor prestaties
+                )
+
+                const fallbackSnapshot = await getDocs(fallbackQuery)
+                newUsers = fallbackSnapshot.docs
+                    .map((doc) => ({ id: doc.id, ...doc.data() }))
+                    .filter((user) =>
+                        (user.name && user.name.toLowerCase().includes(lowerSearchQuery)) ||
+                        (user.displayName && user.displayName.toLowerCase().includes(lowerSearchQuery))
+                    )
+                    .slice(0, ITEMS_PER_PAGE)
+            }
 
             // For each found user, also search for their posts
             if (isInitialSearch && newUsers.length > 0) {
@@ -242,30 +262,49 @@ const SearchResults = () => {
         setPostsLoading(true)
 
         try {
+            // Converteer zoekterm naar lowercase voor case-insensitive zoeken
+            const lowerSearchQuery = searchQuery.toLowerCase()
+
             let postsQuery = query(
                 collection(db, "skills"),
-                where("title", ">=", searchQuery),
-                where("title", "<=", searchQuery + "\uf8ff"),
-                orderBy("title"),
+                where("titleLower", ">=", lowerSearchQuery),
+                where("titleLower", "<=", lowerSearchQuery + "\uf8ff"),
+                orderBy("titleLower"),
                 limit(ITEMS_PER_PAGE)
             )
 
             if (!isInitialSearch && lastPostDoc) {
                 postsQuery = query(
                     collection(db, "skills"),
-                    where("title", ">=", searchQuery),
-                    where("title", "<=", searchQuery + "\uf8ff"),
-                    orderBy("title"),
+                    where("titleLower", ">=", lowerSearchQuery),
+                    where("titleLower", "<=", lowerSearchQuery + "\uf8ff"),
+                    orderBy("titleLower"),
                     startAfter(lastPostDoc),
                     limit(ITEMS_PER_PAGE)
                 )
             }
 
             const postsSnapshot = await getDocs(postsQuery)
-            const newPosts = postsSnapshot.docs.map((doc) => ({
+            let newPosts = postsSnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }))
+
+            // Fallback: als geen resultaten met titleLower, probeer originele velden
+            if (newPosts.length === 0) {
+                let fallbackQuery = query(
+                    collection(db, "skills"),
+                    limit(50) // Beperk voor prestaties
+                )
+
+                const fallbackSnapshot = await getDocs(fallbackQuery)
+                newPosts = fallbackSnapshot.docs
+                    .map((doc) => ({ id: doc.id, ...doc.data() }))
+                    .filter((post) =>
+                        post.title && post.title.toLowerCase().includes(lowerSearchQuery)
+                    )
+                    .slice(0, ITEMS_PER_PAGE)
+            }
 
             // For each found post, also search for related users
             if (isInitialSearch && newPosts.length > 0) {
