@@ -33,6 +33,7 @@ const StrangerProfile = () => {
     const [userExists, setUserExists] = useState(false)
     const [isFollowing, setIsFollowing] = useState(false)
     const [followLoading, setFollowLoading] = useState(false)
+    const [canView, setCanView] = useState(false)
 
     const { currentUser } = useAuth()
     const { userId } = useParams()
@@ -82,6 +83,7 @@ const StrangerProfile = () => {
                         bio: userData.bio || "Geen biografie beschikbaar",
                         avatar: userData.photoURL || userData.avatar || "/src/assets/skillr-hand.png",
                         email: userData.email,
+                        isPrivate: userData.isPrivate || false, // <-- ADD THIS LINE
                         stats: {
                             skills: skills.length,
                             followers: userData.followersCount || 0,
@@ -107,6 +109,17 @@ const StrangerProfile = () => {
 
         fetchUserData()
     }, [userId, db, currentUser])
+
+    useEffect(() => {
+        if (!profile) return;
+        if (!profile.isPrivate) {
+            setCanView(true);
+        } else if (currentUser && (currentUser.uid === userId || (profile.followers || []).includes(currentUser.uid))) {
+            setCanView(true);
+        } else {
+            setCanView(false);
+        }
+    }, [profile, currentUser, userId]);
 
     const handleStatsClick = (type) => {
         if (type === 'followers' || type === 'following') {
@@ -196,15 +209,32 @@ const StrangerProfile = () => {
         }
     }
 
-    const handleSendMessage = async () => {
+    const handleSendMessage = () => {
         if (!currentUser) {
             alert("Je moet ingelogd zijn om berichten te sturen")
             return
         }
-
-        // TODO: Implement messaging functionality
-        alert("Bericht functionaliteit komt binnenkort!")
+        navigate(`/chat/${profile.id || userId}`); // Gebruik het juiste id veld
     }
+
+    const handleBlockUser = async () => {
+        if (!currentUser) {
+            alert("Je moet ingelogd zijn om te blokkeren")
+            return
+        }
+        try {
+            await updateDoc(doc(db, "users", currentUser.uid), {
+                blockedUsers: arrayUnion({
+                    id: userId,
+                    name: profile.name,
+                    avatar: profile.avatar,
+                }),
+            });
+            alert("Gebruiker is geblokkeerd.");
+        } catch (error) {
+            alert("Blokkeren mislukt.");
+        }
+    };
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return "Onbekend"
@@ -250,6 +280,28 @@ const StrangerProfile = () => {
                 <Footer />
             </div>
         )
+    }
+
+    if (!canView) {
+        return (
+            <div className="app-container">
+                <Header />
+                <main>
+                    <div className="container">
+                        <div className="profile">
+                            <img src={profile.avatar || "/placeholder.svg"} alt="Profile Avatar" className="profile-avatar" />
+                            <div className="profile-info">
+                                <h2>{profile.name}</h2>
+                                <p className="profile-bio" style={{ fontStyle: "italic", color: "#888" }}>
+                                    Dit profiel is privé.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
     }
 
     return (
@@ -305,6 +357,11 @@ const StrangerProfile = () => {
                             <button className="ghost" onClick={handleSendMessage}>
                                 Bericht sturen
                             </button>
+                            {currentUser && currentUser.uid !== userId && (
+                                <button className="ghost" onClick={handleBlockUser}>
+                                    Blokkeer gebruiker
+                                </button>
+                            )}
                         </div>
                     </div>
 

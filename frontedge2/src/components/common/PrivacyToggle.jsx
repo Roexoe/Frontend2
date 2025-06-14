@@ -2,14 +2,17 @@
 
 import { useState } from "react"
 import { getFirestore, doc, updateDoc } from "firebase/firestore"
+import { useAuth } from "../auth/AuthContextProvider"
 
 const PrivacyToggle = () => {
   const [isPrivate, setIsPrivate] = useState(false)
   const db = getFirestore()
+  const { currentUser } = useAuth()
 
   const handlePrivacyToggle = async () => {
+    if (!currentUser) return
+    const userRef = doc(db, "users", currentUser.uid)
     try {
-      const userRef = doc(db, "users", "currentUserId")
       await updateDoc(userRef, { isPrivate: !isPrivate })
       setIsPrivate(!isPrivate)
     } catch (error) {

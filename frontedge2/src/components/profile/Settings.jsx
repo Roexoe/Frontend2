@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getFirestore, doc, updateDoc, getDoc, arrayRemove } from "firebase/firestore"
+import { getFirestore, doc, updateDoc, getDoc, arrayRemove, arrayUnion } from "firebase/firestore"
 import { getAuth, deleteUser } from "firebase/auth"
 import Header from "../common/Header"
 import Footer from "../common/Footer"
@@ -19,15 +19,16 @@ const Settings = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isGoogleUser, setIsGoogleUser] = useState(false)
 
+  // Haal geblokkeerde user IDs op en daarna hun info
   useEffect(() => {
     if (!currentUser) return
     const fetchSettings = async () => {
       const userRef = doc(db, "users", currentUser.uid)
       const userSnap = await getDoc(userRef)
       if (userSnap.exists()) {
+        // Use the objects directly!
         setBlockedUsers(userSnap.data().blockedUsers || [])
       }
-      // Check if user is Google user
       setIsGoogleUser(
         currentUser.providerData.some((p) => p.providerId === "google.com")
       )
@@ -35,11 +36,23 @@ const Settings = () => {
     fetchSettings()
   }, [currentUser, db])
 
-  // Unblock user in Firestore
-  const unblockUser = async (userId) => {
+  // Blokkeer een gebruiker (voorbeeld, voeg deze functie toe waar je wilt blokkeren)
+  const blockUser = async (userId) => {
     if (!currentUser) return
     await updateDoc(doc(db, "users", currentUser.uid), {
-      blockedUsers: arrayRemove(userId),
+      blockedUsers: arrayUnion(userId),
+    })
+    setBlockedUsers(prev => [...prev, userId])
+  }
+
+  // Deblokkeer gebruiker
+  const unblockUser = async (userId) => {
+    if (!currentUser) return
+    // Find the blocked user object
+    const userObj = blockedUsers.find(u => u.id === userId)
+    if (!userObj) return
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      blockedUsers: arrayRemove(userObj),
     })
     setBlockedUsers(blockedUsers.filter((user) => user.id !== userId))
   }
@@ -68,9 +81,7 @@ const Settings = () => {
 
   const actuallyDeleteProfile = async () => {
     try {
-      // Remove user doc from Firestore
       await updateDoc(doc(db, "users", currentUser.uid), { deleted: true })
-      // Delete user from Auth
       await deleteUser(auth.currentUser)
       alert("Je profiel is verwijderd.")
       window.location.href = "/"
@@ -84,9 +95,8 @@ const Settings = () => {
 
   // Report user (example: open a modal or send to Firestore)
   const handleReportUser = (user) => {
-    // You could open a modal or send a report to Firestore here
     alert(`Gebruiker ${user.name} is gerapporteerd. Dank voor je melding!`)
-    // Example: addDoc(collection(db, "reports"), { reportedUser: user.id, reporter: currentUser.uid, ... })
+    // Voorbeeld: addDoc(collection(db, "reports"), { reportedUser: user.id, reporter: currentUser.uid, ... })
   }
 
   return (
@@ -117,18 +127,9 @@ const Settings = () => {
                           />
                           <span>{user.name}</span>
                         </div>
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button className="ghost" onClick={() => unblockUser(user.id)}>
-                            Deblokkeren
-                          </button>
-                          <button
-                            className="ghost"
-                            style={{ color: "var(--accent)" }}
-                            onClick={() => handleReportUser(user)}
-                          >
-                            Rapporteren
-                          </button>
-                        </div>
+                        <button className="ghost" onClick={() => unblockUser(user.id)}>
+                          Deblokkeren
+                        </button>
                       </div>
                     ))}
                   </div>
