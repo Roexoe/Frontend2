@@ -34,8 +34,7 @@ function App() {
             <Route path="/messages" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/skill/:skillId" element={<SkillDetail />} />
             <Route path="/profile/:userId" element={<StrangerProfile />} />
-            <Route path="/profile/:userId/followers" element={<FollowersFollowing />} />
-            <Route path="/profile/:userId/following" element={<FollowersFollowing />} />
+            <Route path="/profile/:userId/:type" element={<FollowersFollowing />} />
             <Route path="/chat/:userId" element={<Chat />} />
 
           </Routes>
