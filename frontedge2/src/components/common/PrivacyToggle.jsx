@@ -1,13 +1,28 @@
 "use client"
 
-import { useState } from "react"
-import { getFirestore, doc, updateDoc } from "firebase/firestore"
+import { useState, useEffect } from "react"
+import { getFirestore, doc, updateDoc, getDoc } from "firebase/firestore"
 import { useAuth } from "../auth/AuthContextProvider"
 
 const PrivacyToggle = () => {
   const [isPrivate, setIsPrivate] = useState(false)
+  const [loading, setLoading] = useState(true)
   const db = getFirestore()
   const { currentUser } = useAuth()
+
+  // Fetch the current privacy setting from Firestore on mount
+  useEffect(() => {
+    const fetchPrivacy = async () => {
+      if (!currentUser) return
+      const userRef = doc(db, "users", currentUser.uid)
+      const userSnap = await getDoc(userRef)
+      if (userSnap.exists()) {
+        setIsPrivate(!!userSnap.data().isPrivate)
+      }
+      setLoading(false)
+    }
+    fetchPrivacy()
+  }, [currentUser, db])
 
   const handlePrivacyToggle = async () => {
     if (!currentUser) return
@@ -17,9 +32,12 @@ const PrivacyToggle = () => {
       setIsPrivate(!isPrivate)
     } catch (error) {
       console.error("Error updating privacy settings:", error)
-      // Toggle the state anyway for demo purposes
-      setIsPrivate(!isPrivate)
+      setIsPrivate(!isPrivate) // fallback for demo
     }
+  }
+
+  if (loading) {
+    return <div>Privacy-instelling laden...</div>
   }
 
   return (

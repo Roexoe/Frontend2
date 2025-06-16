@@ -282,140 +282,127 @@ const StrangerProfile = () => {
         )
     }
 
-    if (!canView) {
-        return (
-            <div className="app-container">
-                <Header />
-                <main>
-                    <div className="container">
-                        <div className="profile">
-                            <img src={profile.avatar || "/placeholder.svg"} alt="Profile Avatar" className="profile-avatar" />
-                            <div className="profile-info">
-                                <h2>{profile.name}</h2>
-                                <p className="profile-bio" style={{ fontStyle: "italic", color: "#888" }}>
-                                    Dit profiel is privé.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </main>
-                <Footer />
-            </div>
-        );
-    }
-
+    // Always show avatar, name, and private message if isPrivate
     return (
         <div className="app-container">
             <Header />
             <main>
                 <div className="container">
                     <div className="profile">
-                        <img
-                            src={profile.avatar || "/placeholder.svg"}
-                            alt="Profile Avatar"
-                            className="profile-avatar"
-                        />
-
+                        <img src={profile.avatar || "/placeholder.svg"} alt="Profile Avatar" className="profile-avatar" />
                         <div className="profile-info">
                             <h2>{profile.name}</h2>
-                            <p className="profile-bio">{profile.bio}</p>
-                            {profile.email && (
-                                <p className="profile-email">{profile.email}</p>
+                            {profile.isPrivate && (
+                                <p className="profile-bio" style={{ fontStyle: "italic", color: "#888" }}>
+                                    Dit profiel is privé.
+                                </p>
                             )}
+                        </div>
+                    </div>
 
-                            <div className="profile-stats">
-                                <div className="stat-item">
-                                    <span className="stat-value">{profile.stats.skills}</span>
-                                    <span className="stat-label">Vaardigheden</span>
-                                </div>
-                                <div className="stat-item">
-                                    <span className="stat-value">{profile.stats.followers}</span>
-                                    <span className="stat-label">Volgers</span>
-                                </div>
-                                <div className="stat-item">
-                                    <span className="stat-value">{profile.stats.following}</span>
-                                    <span className="stat-label">Volgend</span>
+                    {/* Only show full profile if not private */}
+                    {!profile.isPrivate && (
+                        <>
+                            <div className="profile-info">
+                                <p className="profile-bio">{profile.bio}</p>
+                                {profile.email && (
+                                    <p className="profile-email">{profile.email}</p>
+                                )}
+
+                                <div className="profile-stats">
+                                    <div className="stat-item">
+                                        <span className="stat-value">{profile.stats.skills}</span>
+                                        <span className="stat-label">Vaardigheden</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-value">{profile.stats.followers}</span>
+                                        <span className="stat-label">Volgers</span>
+                                    </div>
+                                    <div className="stat-item">
+                                        <span className="stat-value">{profile.stats.following}</span>
+                                        <span className="stat-label">Volgend</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="profile-actions">
-                            {currentUser && (
-                                <button
-                                    onClick={handleFollowUser}
-                                    disabled={followLoading}
-                                    className={isFollowing ? "following" : ""}
-                                >
-                                    {followLoading
-                                        ? "Laden..."
-                                        : isFollowing
-                                            ? "Ontvolgen"
-                                            : "Volgen"
-                                    }
+                            <div className="profile-actions">
+                                {currentUser && (
+                                    <button
+                                        onClick={handleFollowUser}
+                                        disabled={followLoading}
+                                        className={isFollowing ? "following" : ""}
+                                    >
+                                        {followLoading
+                                            ? "Laden..."
+                                            : isFollowing
+                                                ? "Ontvolgen"
+                                                : "Volgen"
+                                        }
+                                    </button>
+                                )}
+                                <button className="ghost" onClick={handleSendMessage}>
+                                    Bericht sturen
                                 </button>
-                            )}
-                            <button className="ghost" onClick={handleSendMessage}>
-                                Bericht sturen
-                            </button>
-                            {currentUser && currentUser.uid !== userId && (
-                                <button className="ghost" onClick={handleBlockUser}>
-                                    Blokkeer gebruiker
-                                </button>
-                            )}
-                        </div>
-                    </div>
+                                {currentUser && currentUser.uid !== userId && (
+                                    <button className="ghost" onClick={handleBlockUser}>
+                                        Blokkeer gebruiker
+                                    </button>
+                                )}
+                            </div>
 
-                    <div className="profile-content">
-                        <h3>Vaardigheden van {profile.name}</h3>
-                        <div className="feed">
-                            {userSkills && userSkills.length > 0 ? (
-                                userSkills.map((skill) => (
-                                    <div className="skill-card" key={skill.id}>
-                                        <h3>{skill.title}</h3>
-                                        <p>{skill.description}</p>
-                                        {skill.media && skill.media.length > 0 && (
-                                            <div className="skill-media">
-                                                {skill.media[0].type === "image" ? (
-                                                    <img
-                                                        src={skill.media[0].url}
-                                                        alt={skill.title}
-                                                        className="skill-image"
-                                                    />
-                                                ) : skill.media[0].type === "video" ? (
-                                                    <video
-                                                        src={skill.media[0].url}
-                                                        controls
-                                                        className="skill-video"
-                                                    />
-                                                ) : null}
-                                            </div>
-                                        )}
-                                        <div className="skill-card-footer">
-                                            <div className="skill-user">
-                                                <strong>Gedeeld door:</strong> {profile.name}
-                                            </div>
-                                            <div className="skill-meta">
-                                                {skill.timestamp && (
-                                                    <span className="skill-date">
-                                                        {formatTimestamp(skill.timestamp)}
-                                                    </span>
+                            <div className="profile-content">
+                                <h3>Vaardigheden van {profile.name}</h3>
+                                <div className="feed">
+                                    {userSkills && userSkills.length > 0 ? (
+                                        userSkills.map((skill) => (
+                                            <div className="skill-card" key={skill.id}>
+                                                <h3>{skill.title}</h3>
+                                                <p>{skill.description}</p>
+                                                {skill.media && skill.media.length > 0 && (
+                                                    <div className="skill-media">
+                                                        {skill.media[0].type === "image" ? (
+                                                            <img
+                                                                src={skill.media[0].url}
+                                                                alt={skill.title}
+                                                                className="skill-image"
+                                                            />
+                                                        ) : skill.media[0].type === "video" ? (
+                                                            <video
+                                                                src={skill.media[0].url}
+                                                                controls
+                                                                className="skill-video"
+                                                            />
+                                                        ) : null}
+                                                    </div>
                                                 )}
+                                                <div className="skill-card-footer">
+                                                    <div className="skill-user">
+                                                        <strong>Gedeeld door:</strong> {profile.name}
+                                                    </div>
+                                                    <div className="skill-meta">
+                                                        {skill.timestamp && (
+                                                            <span className="skill-date">
+                                                                {formatTimestamp(skill.timestamp)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="skill-actions">
+                                                        <button className="ghost">Like</button>
+                                                        <button className="ghost">Reactie</button>
+                                                        <button className="ghost">Delen</button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="skill-actions">
-                                                <button className="ghost">Like</button>
-                                                <button className="ghost">Reactie</button>
-                                                <button className="ghost">Delen</button>
-                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state">
+                                            <p>{profile.name} heeft nog geen vaardigheden gedeeld</p>
                                         </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="empty-state">
-                                    <p>{profile.name} heeft nog geen vaardigheden gedeeld</p>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+                        </>
+                    )}
                 </div>
             </main>
             <Footer />
