@@ -2335,3 +2335,201 @@ input:checked + .toggle-slider:before {
 .user-actions .following:hover {
   background-color: #c9302c;
 }
+
+/* Share Model Styles */
+.share-Model-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.share-Model {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.share-Model-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0 24px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.share-Model-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: #f5f5f5;
+}
+
+.share-Model-content {
+  padding: 0 24px 24px 24px;
+}
+
+.share-message-input {
+  margin-bottom: 24px;
+}
+
+.share-message-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.share-message-input textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.share-message-input textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.contacts-list h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.contact-item:hover {
+  background-color: #f8f9fa;
+}
+
+.contact-item:active {
+  background-color: #e9ecef;
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+
+.contact-name {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .share-Model {
+    background: #2d3748;
+    color: white;
+  }
+
+  .share-Model-header {
+    border-bottom-color: #4a5568;
+  }
+
+  .share-Model-header h3 {
+    color: white;
+  }
+
+  .close-button {
+    color: #a0aec0;
+  }
+
+  .close-button:hover {
+    background-color: #4a5568;
+  }
+
+  .share-message-input label {
+    color: white;
+  }
+
+  .share-message-input textarea {
+    background: #4a5568;
+    border-color: #5a67d8;
+    color: white;
+  }
+
+  .share-message-input textarea:focus {
+    border-color: #63b3ed;
+  }
+
+  .contacts-list h4 {
+    color: white;
+  }
+
+  .contact-item:hover {
+    background-color: #4a5568;
+  }
+
+  .contact-item:active {
+    background-color: #5a67d8;
+  }
+
+  .contact-name {
+    color: white;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .share-Model {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .share-Model-header,
+  .share-Model-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
