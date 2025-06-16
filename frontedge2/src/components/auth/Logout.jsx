@@ -1,18 +1,25 @@
 "use client"
+import { useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { signOut } from "firebase/auth"
 import { auth } from "../../firebase"
 
 const Logout = () => {
-  const handleLogout = async () => {
-    try {
-      await signOut(auth)
-      alert("Uitgelogd!")
-    } catch (err) {
-      console.error(err.message)
-    }
-  }
+  const navigate = useNavigate()
 
-  return <button onClick={handleLogout}>Uitloggen</button>
+  useEffect(() => {
+    const doLogout = async () => {
+      try {
+        await signOut(auth)
+        navigate("/login")
+      } catch (err) {
+        console.error(err.message)
+      }
+    }
+    doLogout()
+  }, [navigate])
+
+  return null
 }
 
 export default Logout
