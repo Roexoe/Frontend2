@@ -15,6 +15,9 @@ import SearchResults from './components/search/SearchResultsComponent.jsx'
 import SkillDetail from "./components/skill/SkillDetail"
 import StrangerProfile from './components/profile/StrangerProfile'
 import FollowersFollowing from './components/profile/FollowersFollowing.jsx'
+import PrivacyPolicy from './components/common/privacyPolicy.jsx'
+import TermsOfService from './components/common/TermsOfService.jsx'
+
 
 
 function App() {
@@ -36,6 +39,8 @@ function App() {
             <Route path="/profile/:userId" element={<StrangerProfile />} />
             <Route path="/profile/:userId/:type" element={<FollowersFollowing />} />
             <Route path="/chat/:userId" element={<Chat />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
 
           </Routes>
         </AuthProvider>
