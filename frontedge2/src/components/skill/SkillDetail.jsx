@@ -495,10 +495,6 @@ const SkillDetail = () => {
                           <div className="comment-content">
                             <p>{comment.content}</p>
                           </div>
-                          <div className="comment-actions">
-                            <button className="ghost">Like</button>
-                            <button className="ghost">Reageren</button>
-                          </div>
                         </div>
                     ))
                 ) : (
