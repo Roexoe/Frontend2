@@ -8,7 +8,7 @@ const TermsOfService = () => {
 
             <main className="flex-grow bg-gray-50 p-12">
                 <div className="container mx-auto p-4 max-w-4xl">
-                    <div className="bg-white rounded-lg shadow-lg p-8">
+                    <div className="bg-white rounded-lg">
                         <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Gebruiksvoorwaarden</h1>
 
                         <div className="prose max-w-none">
