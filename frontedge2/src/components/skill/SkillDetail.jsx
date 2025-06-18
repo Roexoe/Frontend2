@@ -8,9 +8,14 @@ import {
   updateDoc,
   arrayUnion,
   arrayRemove,
-  serverTimestamp
+  serverTimestamp,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc
 } from "firebase/firestore";
-import { auth } from "../../firebase"; // Zorg ervoor dat je auth importeert van je firebase configuratie
+import { auth } from "../../firebase";
 import Header from "../common/Header";
 import Footer from "../common/Footer";
 import skillrHandImg from "../../assets/skillr-hand.png";
@@ -24,6 +29,12 @@ const SkillDetail = () => {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [userAvatar, setUserAvatar] = useState(null);
+
+  // Share Model states
+  const [showShareModel, setShowShareModel] = useState(false);
+  const [contacts, setContacts] = useState([]);
+  const [shareMessage, setShareMessage] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
 
   useEffect(() => {
     const fetchSkill = async () => {
@@ -65,6 +76,70 @@ const SkillDetail = () => {
 
     fetchSkill();
   }, [skillId]);
+
+  // Fetch contacts when share Model is opened
+  useEffect(() => {
+    if (showShareModel && auth.currentUser) {
+      fetchContacts();
+    }
+  }, [showShareModel]);
+
+  const fetchContacts = async () => {
+    try {
+      const db = getFirestore();
+      const q = query(
+          collection(db, "users"),
+          where("email", "!=", auth.currentUser.email)
+      );
+      const snapshot = await getDocs(q);
+      setContacts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    }
+  };
+
+  const handleShare = () => {
+    if (!auth.currentUser) {
+      alert("Je moet ingelogd zijn om te delen");
+      return;
+    }
+
+    // Set default share message
+    setShareMessage(`Bekijk deze vaardigheid: "${skill.title}" door ${skill.user?.name || 'onbekende gebruiker'}`);
+    setShowShareModel(true);
+  };
+
+  const handleSendShare = async (contact) => {
+    if (!shareMessage.trim()) return;
+
+    setShareLoading(true);
+    try {
+      const db = getFirestore();
+      const chatId = [auth.currentUser.uid, contact.id].sort().join("_");
+
+      // Create the share message with skill link
+      const skillLink = `${window.location.origin}/skill/${skillId}`;
+      const fullMessage = `${shareMessage}\n\n🔗 ${skillLink}`;
+
+      await addDoc(collection(db, "chats", chatId, "messages"), {
+        text: fullMessage,
+        senderId: auth.currentUser.uid,
+        timestamp: serverTimestamp(),
+        isSkillShare: true,
+        sharedSkillId: skillId,
+        sharedSkillTitle: skill.title
+      });
+
+      setShowShareModel(false);
+      setShareMessage("");
+      alert(`Vaardigheid gedeeld met ${contact.name}!`);
+    } catch (error) {
+      console.error("Error sharing skill:", error);
+      alert("Er ging iets mis bij het delen van de vaardigheid");
+    } finally {
+      setShareLoading(false);
+    }
+  };
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return "Onbekend";
@@ -138,7 +213,7 @@ const SkillDetail = () => {
         await updateDoc(skillRef, {
           commentsList: updatedCommentsList,
           comments: updatedCommentsList.length,
-          lastUpdateTimestamp: serverTimestamp() // Dit is prima, want het is niet in een array
+          lastUpdateTimestamp: serverTimestamp()
         });
 
         // Update lokale states
@@ -158,7 +233,7 @@ const SkillDetail = () => {
   };
 
   const handleBackClick = () => {
-    navigate(-1); // Navigeer terug naar het vorige scherm
+    navigate(-1);
   };
 
   // Functie om naar profiel te navigeren
@@ -312,11 +387,67 @@ const SkillDetail = () => {
                   >
                     <span>Like</span>
                   </button>
-                  <button className="ghost">
+                  <button className="ghost" onClick={handleShare}>
                     <span>Delen</span>
                   </button>
                 </div>
               </div>
+
+              {/* Share Model */}
+              {showShareModel && (
+                  <div className="share-Model-overlay" onClick={() => setShowShareModel(false)}>
+                    <div className="share-Model" onClick={(e) => e.stopPropagation()}>
+                      <div className="share-Model-header">
+                        <h3>Vaardigheid delen</h3>
+                        <button
+                            className="close-button"
+                            onClick={() => setShowShareModel(false)}
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      <div className="share-Model-content">
+                        <div className="share-message-input">
+                          <label>Bericht (optioneel):</label>
+                          <textarea
+                              value={shareMessage}
+                              onChange={(e) => setShareMessage(e.target.value)}
+                              placeholder="Voeg een persoonlijk bericht toe..."
+                              rows={3}
+                          />
+                        </div>
+
+                        <div className="contacts-list">
+                          <h4>Selecteer contact:</h4>
+                          {contacts.length > 0 ? (
+                              contacts.map((contact) => (
+                                  <div
+                                      key={contact.id}
+                                      className="contact-item"
+                                      onClick={() => handleSendShare(contact)}
+                                      style={{
+                                        cursor: shareLoading ? 'not-allowed' : 'pointer',
+                                        opacity: shareLoading ? 0.6 : 1
+                                      }}
+                                  >
+                                    <img
+                                        src={contact.photoURL || contact.avatar || skillrHandImg}
+                                        alt={contact.name}
+                                        className="contact-avatar"
+                                        onError={(e) => { e.target.src = skillrHandImg; }}
+                                    />
+                                    <span className="contact-name">{contact.name}</span>
+                                  </div>
+                              ))
+                          ) : (
+                              <p>Geen contacten gevonden</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+              )}
 
               <div className="comments-section">
                 <h3>Reacties</h3>
@@ -363,10 +494,6 @@ const SkillDetail = () => {
                           </div>
                           <div className="comment-content">
                             <p>{comment.content}</p>
-                          </div>
-                          <div className="comment-actions">
-                            <button className="ghost">Like</button>
-                            <button className="ghost">Reageren</button>
                           </div>
                         </div>
                     ))
