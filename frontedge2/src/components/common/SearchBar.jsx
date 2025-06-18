@@ -38,11 +38,15 @@ const SearchBar = () => {
 
   const performQuickSearch = async (searchTerm) => {
     try {
+      // Converteer zoekterm naar lowercase voor case-insensitive zoeken
+      const lowerSearchTerm = searchTerm.toLowerCase()
+
       // Quick search voor dropdown (beperkt tot 5 resultaten per type)
+      // Zoek op zowel originele velden als lowercase velden
       const usersQuery = query(
           collection(db, "users"),
-          where("name", ">=", searchTerm),
-          where("name", "<=", searchTerm + "\uf8ff"),
+          where("nameLower", ">=", lowerSearchTerm),
+          where("nameLower", "<=", lowerSearchTerm + "\uf8ff"),
           limit(5)
       )
       const usersSnapshot = await getDocs(usersQuery)
@@ -54,8 +58,8 @@ const SearchBar = () => {
 
       const skillsQuery = query(
           collection(db, "skills"),
-          where("title", ">=", searchTerm),
-          where("title", "<=", searchTerm + "\uf8ff"),
+          where("titleLower", ">=", lowerSearchTerm),
+          where("titleLower", "<=", lowerSearchTerm + "\uf8ff"),
           limit(5)
       )
       const skillsSnapshot = await getDocs(skillsQuery)
@@ -65,7 +69,31 @@ const SearchBar = () => {
         ...doc.data(),
       }))
 
-      const combinedResults = [...usersResults, ...skillsResults]
+      let fallbackResults = []
+      if (usersResults.length === 0 && skillsResults.length === 0) {
+        const originalUsersQuery = query(collection(db, "users"), limit(20))
+        const originalUsersSnapshot = await getDocs(originalUsersQuery)
+        const filteredUsers = originalUsersSnapshot.docs
+            .map((doc) => ({ id: doc.id, type: "user", ...doc.data() }))
+            .filter((user) =>
+                (user.name && user.name.toLowerCase().includes(lowerSearchTerm)) ||
+                (user.displayName && user.displayName.toLowerCase().includes(lowerSearchTerm))
+            )
+            .slice(0, 5)
+
+        const originalSkillsQuery = query(collection(db, "skills"), limit(20))
+        const originalSkillsSnapshot = await getDocs(originalSkillsQuery)
+        const filteredSkills = originalSkillsSnapshot.docs
+            .map((doc) => ({ id: doc.id, type: "skill", ...doc.data() }))
+            .filter((skill) =>
+                skill.title && skill.title.toLowerCase().includes(lowerSearchTerm)
+            )
+            .slice(0, 5)
+
+        fallbackResults = [...filteredUsers, ...filteredSkills]
+      }
+
+      const combinedResults = [...usersResults, ...skillsResults, ...fallbackResults]
       setResults(combinedResults)
       setShowResults(combinedResults.length > 0)
 

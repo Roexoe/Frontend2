@@ -52,6 +52,9 @@ const Header = () => {
           <nav className="desktop-nav">
             {currentUser ? (
                 <>
+                  <Link to="/messages" className="nav-link">
+                    <span>Berichten</span>
+                  </Link>
                   <Link to="/logout" className="nav-link">
                     <span>Uitloggen</span>
                   </Link>
@@ -93,9 +96,6 @@ const Header = () => {
                   </Link>
                   <Link to="/profile" onClick={toggleMobileMenu}>
                     Profiel
-                  </Link>
-                  <Link to="/notifications" onClick={toggleMobileMenu}>
-                    Meldingen
                   </Link>
                   <Link to="/messages" onClick={toggleMobileMenu}>
                     Berichten

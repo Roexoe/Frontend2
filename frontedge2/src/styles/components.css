@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* ==== Header and Navigation ==== */
 header {
   background-color: rgba(91, 33, 182, 0.95); /* Updated to primary-dark with transparency */
@@ -1015,6 +1017,10 @@ footer a:after {
   position: relative;
   overflow: hidden;
   animation: fadeIn var(--transition-normal);
+    display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 32px;
 }
 
 .profile:before {
@@ -1029,49 +1035,29 @@ footer a:after {
 }
 
 .profile-avatar {
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: var(--space-lg);
   border: 4px solid var(--primary);
-  transition: all var(--transition-normal);
-  position: relative;
-  z-index: 1;
-  box-shadow: var(--shadow-lg);
-}
-
-.profile-avatar:hover {
-  transform: scale(1.05) rotate(5deg);
-  box-shadow: 0 0 30px rgba(124, 58, 237, 0.4);
-  border-width: 5px;
+  margin-bottom: 16px;
+  object-fit: cover;
+  background: #fff;
 }
 
 .profile-info {
-  margin-bottom: var(--space-lg);
-  position: relative;
-  z-index: 1;
+  text-align: center;
+  margin-bottom: 24px;
 }
 
 .profile-info h2 {
-  font-size: var(--font-size-3xl);
-  margin-bottom: var(--space-sm);
-  color: var(--primary-dark);
-  transition: all var(--transition-normal);
-}
-
-.profile-info h2:hover {
-  text-shadow: 0 2px 10px rgba(124, 58, 237, 0.3);
+  color: var(--primary);
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .profile-bio {
-  max-width: 600px;
-  margin: 0 auto var(--space-lg);
-  color: var(--foreground);
-  opacity: 0.9;
-  position: relative;
-  z-index: 1;
-  line-height: 1.7;
+  color: #bdbdbd;
+  margin-bottom: 0.5rem;
 }
 
 .profile-stats {
@@ -2274,20 +2260,278 @@ input:checked + .toggle-slider:before {
   box-shadow: var(--shadow-md);
 }
 
-/* Voeg toe aan je CSS-bestand */
-.modal-overlay {
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1.5rem;
+  background-color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ccc;
+}
+
+.user-details h3 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: #222;
+}
+
+.user-bio {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0.25rem 0;
+}
+
+.followers-count {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.user-actions button {
+  background-color: #f0f0f0;
+  border: none;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.user-actions button:hover {
+  background-color: #e0e0e0;
+}
+
+.user-actions .following {
+  background-color: #d9534f;
+  color: #fff;
+}
+
+.user-actions .following:hover {
+  background-color: #c9302c;
+}
+
+/* Share Model Styles */
+.share-Model-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.4);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.share-Model {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.share-Model-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0 24px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 20px;
+}
+
+.share-Model-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  border-radius: 6px;
+  transition: background-color 0.2s;
 }
-.modal-content {
-  background: #fff;
-  padding: 2rem;
-  border-radius: 1rem;
-  max-width: 500px;
+
+.close-button:hover {
+  background-color: #f5f5f5;
+}
+
+.share-Model-content {
+  padding: 0 24px 24px 24px;
+}
+
+.share-message-input {
+  margin-bottom: 24px;
+}
+
+.share-message-input label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.share-message-input textarea {
   width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.share-message-input textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.contacts-list h4 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.contact-item:hover {
+  background-color: #f8f9fa;
+}
+
+.contact-item:active {
+  background-color: #e9ecef;
+}
+
+.contact-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+}
+
+.contact-name {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .share-Model {
+    background: #2d3748;
+    color: white;
+  }
+
+  .share-Model-header {
+    border-bottom-color: #4a5568;
+  }
+
+  .share-Model-header h3 {
+    color: white;
+  }
+
+  .close-button {
+    color: #a0aec0;
+  }
+
+  .close-button:hover {
+    background-color: #4a5568;
+  }
+
+  .share-message-input label {
+    color: white;
+  }
+
+  .share-message-input textarea {
+    background: #4a5568;
+    border-color: #5a67d8;
+    color: white;
+  }
+
+  .share-message-input textarea:focus {
+    border-color: #63b3ed;
+  }
+
+  .contacts-list h4 {
+    color: white;
+  }
+
+  .contact-item:hover {
+    background-color: #4a5568;
+  }
+
+  .contact-item:active {
+    background-color: #5a67d8;
+  }
+
+  .contact-name {
+    color: white;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .share-Model {
+    width: 95%;
+    margin: 20px;
+  }
+
+  .share-Model-header,
+  .share-Model-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }

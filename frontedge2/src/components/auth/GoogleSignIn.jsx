@@ -2,11 +2,13 @@
 
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore"
+import { useNavigate } from "react-router-dom"
 
 const GoogleSignIn = () => {
   const auth = getAuth()
   const provider = new GoogleAuthProvider()
   const db = getFirestore()
+  const navigate = useNavigate()
 
   const handleGoogleSignIn = async () => {
     try {
@@ -31,7 +33,8 @@ const GoogleSignIn = () => {
         })
       }
 
-      console.log("User signed in:", user)
+      // Redirect to home page after successful login
+      navigate("/")
     } catch (error) {
       console.error("Error during Google Sign-In:", error)
     }
