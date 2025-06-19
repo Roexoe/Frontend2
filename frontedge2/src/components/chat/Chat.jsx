@@ -48,7 +48,7 @@ const Chat = () => {
                     fontWeight: '500'
                   }}
               >
-              {isSkillLink ? '🔗 Bekijk vaardigheid' : part}
+              {isSkillLink ? 'Bekijk vaardigheid' : part}
             </span>
           );
         } else {
@@ -96,7 +96,6 @@ const Chat = () => {
       return (
           <div className="skill-share-message">
             <div className="skill-share-header">
-              <span className="skill-share-icon">🎯</span>
               <span className="skill-share-label">Gedeelde vaardigheid</span>
             </div>
             <div className="skill-share-content">

@@ -119,7 +119,7 @@ const SkillDetail = () => {
 
       // Create the share message with skill link
       const skillLink = `${window.location.origin}/skill/${skillId}`;
-      const fullMessage = `${shareMessage}\n\n🔗 ${skillLink}`;
+      const fullMessage = `${shareMessage}\n\n ${skillLink}`;
 
       await addDoc(collection(db, "chats", chatId, "messages"), {
         text: fullMessage,
